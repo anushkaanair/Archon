@@ -1,15 +1,21 @@
 """FastAPI dependency injection.
 
 Provides reusable dependencies for database sessions, Redis clients,
-Qdrant connections, and API-key-based authentication.
+Qdrant connections, and authentication.
+
+Authentication supports two token types (tried in order):
+  1. JWT issued by /auth/{provider}/callback (OAuth flow)
+  2. SHA-256-hashed API key stored in the api_keys table
 """
 
 from __future__ import annotations
 
 import hashlib
+import uuid
 from typing import Any
 
 from fastapi import Depends, Header, HTTPException, status
+from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,49 +24,86 @@ from app.db.models.api_key import ApiKey
 from app.db.models.user import User
 from app.db.session import get_db
 
+JWT_ALGORITHM = "HS256"
+
 
 async def get_current_user(
-    authorization: str = Header(..., description="Bearer <API key>"),
+    authorization: str = Header(..., description="Bearer <JWT or API key>"),
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> User:
     """Authenticate a request via Bearer token and return the owning user.
 
-    The raw API key is hashed with SHA-256 and looked up in the ``api_keys``
-    table. If the key is missing, revoked, or the owning user is inactive,
-    an HTTP 401 is raised.
+    Two token formats are accepted (tried in order):
 
-    Security note: the raw key is never stored or logged — only the hash is
-    compared.
+    1. **JWT** — issued by the OAuth callback routes. Decoded with the
+       ``JWT_SECRET`` and the ``sub`` claim used to look up the user.
+
+    2. **API key** — a raw key that has been SHA-256-hashed (with the
+       ``API_KEY_HASH_SECRET`` salt) and stored in the ``api_keys`` table.
+
+    If neither authentication method succeeds an HTTP 401 is raised.
     """
     if not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authorization header. Expected: Bearer <API key>",
+            detail="Invalid authorization header. Expected: Bearer <token>",
         )
 
-    raw_key = authorization[7:]  # strip "Bearer "
+    raw_token = authorization[7:]  # strip "Bearer "
 
-    # Hash the key the same way it was stored at creation time
+    # ── 1. Try JWT decode ────────────────────────────────────────────────────
+    try:
+        payload = jwt.decode(raw_token, settings.jwt_secret, algorithms=[JWT_ALGORITHM])
+        user_id_str = payload.get("sub")
+        if user_id_str:
+            try:
+                uid = uuid.UUID(user_id_str)
+            except ValueError:
+                uid = None
+
+            if uid:
+                result = await db.execute(
+                    select(User).where(
+                        User.id == uid,
+                        User.is_active.is_(True),
+                        User.deleted_at.is_(None),
+                    )
+                )
+                user = result.scalar_one_or_none()
+                if user:
+                    return user
+    except JWTError:
+        pass  # Not a valid JWT — try API key next
+    except Exception:
+        pass
+
+    # ── 2. Try API key hash lookup ───────────────────────────────────────────
     key_hash = hashlib.sha256(
-        (raw_key + settings.api_key_hash_secret).encode()
+        (raw_token + settings.api_key_hash_secret).encode()
     ).hexdigest()
 
     result = await db.execute(
-        select(ApiKey)
-        .where(ApiKey.key_hash == key_hash, ApiKey.is_active.is_(True), ApiKey.deleted_at.is_(None))
+        select(ApiKey).where(
+            ApiKey.key_hash == key_hash,
+            ApiKey.is_active.is_(True),
+            ApiKey.deleted_at.is_(None),
+        )
     )
     api_key = result.scalar_one_or_none()
 
     if api_key is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or revoked API key.",
+            detail="Invalid or revoked credentials.",
         )
 
-    # Load the owning user
     user_result = await db.execute(
-        select(User).where(User.id == api_key.user_id, User.is_active.is_(True), User.deleted_at.is_(None))
+        select(User).where(
+            User.id == api_key.user_id,
+            User.is_active.is_(True),
+            User.deleted_at.is_(None),
+        )
     )
     user = user_result.scalar_one_or_none()
 
@@ -76,17 +119,15 @@ async def get_current_user(
 def get_redis() -> Any:
     """Return the Redis client attached during app lifespan.
 
-    This is a placeholder dependency; the actual Redis client is set on
-    ``app.state.redis`` during startup and injected via the request state.
+    The actual client is set on ``app.state.redis`` during startup.
     In routes, prefer ``request.app.state.redis``.
     """
-    return None  # Overridden at runtime
+    return None
 
 
 def get_qdrant() -> Any:
     """Return the Qdrant client attached during app lifespan.
 
-    Like ``get_redis()``, the actual client is set on ``app.state.qdrant``
-    during startup.
+    The actual client is set on ``app.state.qdrant`` during startup.
     """
-    return None  # Overridden at runtime
+    return None

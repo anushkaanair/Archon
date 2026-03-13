@@ -1,8 +1,4 @@
-"""User ORM model.
-
-Stores registered users who access the Archon API. Each user has a tier
-(free / pro) that determines their rate limit.
-"""
+"""User ORM model — supports password and OAuth authentication."""
 
 from __future__ import annotations
 
@@ -17,19 +13,17 @@ class User(Base):
 
     __tablename__ = "users"
 
-    email: Mapped[str] = mapped_column(
-        String(255), unique=True, nullable=False, index=True, doc="Unique email address."
-    )
-    hashed_password: Mapped[str] = mapped_column(
-        String(255), nullable=False, doc="bcrypt-hashed password."
-    )
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    hashed_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    provider: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    provider_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     tier: Mapped[str] = mapped_column(
         String(20), nullable=False, default="free", server_default="free",
-        doc="Subscription tier: 'free' or 'pro'. Controls rate limits.",
     )
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true",
-        doc="Whether the account is active. Inactive accounts cannot authenticate.",
     )
 
     # ── Relationships ────────────────────────────────────────────
