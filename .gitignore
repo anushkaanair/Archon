@@ -1,0 +1,39 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node
+node_modules/
+dist/
+build/
+.npm/
+
+# Testing/Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+coverage.xml
+
+# macOS
+.DS_Store
+
+# Misc logs
+*.log
+docker_err.txt
+pip_out.txt
