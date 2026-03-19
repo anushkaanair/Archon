@@ -7,6 +7,9 @@ import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/layout/ProtectedRoute';
+
 const router = createBrowserRouter([
   {
     path: '/',
@@ -17,30 +20,39 @@ const router = createBrowserRouter([
     element: <Login />,
   },
   {
-    element: <SidebarLayout />,
+    element: <ProtectedRoute />,
     children: [
       {
-        path: '/dashboard',
-        element: <Dashboard />,
-      },
-      {
-        path: '/builder',
-        element: <Builder />,
-      },
-      {
-        path: '/analytics',
-        element: <Analytics />,
-      },
-      {
-        path: '/settings',
-        element: <Settings />,
+        element: <SidebarLayout />,
+        children: [
+          {
+            path: '/dashboard',
+            element: <Dashboard />,
+          },
+          {
+            path: '/builder',
+            element: <Builder />,
+          },
+          {
+            path: '/analytics',
+            element: <Analytics />,
+          },
+          {
+            path: '/settings',
+            element: <Settings />,
+          },
+        ],
       },
     ],
   },
 ]);
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
 }
 
 export default App;

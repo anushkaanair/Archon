@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const ArchonLogoFull = () => (
   <div className="relative flex items-center justify-center w-[120px] h-[120px] mx-auto text-white group scale-75 md:scale-100 mb-8">
@@ -23,12 +24,15 @@ const ArchonLogoFull = () => (
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    // Simulating API Call
     setTimeout(() => {
+      login('arch_test_key', { id: 'admin-123', email: 'developer@example.com', name: 'Archon Admin' });
       navigate('/dashboard');
     }, 1500);
   };
