@@ -3,8 +3,11 @@ import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 import { StatCard } from '../components/ui/StatCard';
+import { useAuth } from '../context/AuthContext';
 
 export default function Dashboard() {
+  const { token } = useAuth();
+  
   const [deployments, setDeployments] = useState([
     { name: 'Legal Q&A Bot', model: 'GPT-4o', status: 'Healthy', lat: '0.8s', req: '1.2k/min' },
     { name: 'Code Assistant Pro', model: 'Claude 3.5 Sonnet', status: 'Healthy', lat: '1.5s', req: '850/min' },
@@ -12,9 +15,11 @@ export default function Dashboard() {
   ]);
 
   useEffect(() => {
+    if (!token) return;
+    
     fetch('/v1/models', {
       headers: {
-        'Authorization': 'Bearer arch_test_key'
+        'Authorization': `Bearer ${token}`
       }
     })
       .then(res => res.json())
