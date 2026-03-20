@@ -53,6 +53,15 @@ class Settings(BaseSettings):
 
     # ── Auth ─────────────────────────────────────────────────────
     api_key_hash_secret: str = "change-me-in-production"
+    jwt_secret: str = "archon-jwt-secret-change-in-production"
+    frontend_url: str = "http://localhost:5174"
+    backend_url: str = "http://localhost:8000"
+
+    # ── OAuth ─────────────────────────────────────────────────────
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    github_client_id: str = ""
+    github_client_secret: str = ""
 
     # ── Rate Limiting (requests per minute) ──────────────────────
     rate_limit_free: int = 100
