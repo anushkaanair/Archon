@@ -30,12 +30,16 @@ async def create_redis_client() -> aioredis.Redis:
 async def cache_get(client: aioredis.Redis, key: str) -> Any | None:
     """Retrieve a JSON-serialised value from Redis.
 
-    Returns ``None`` on cache miss.
+    Returns ``None`` on cache miss or connection error (graceful degradation
+    when Redis is unavailable — the app falls back to DB queries).
     """
-    raw = await client.get(key)
-    if raw is None:
+    try:
+        raw = await client.get(key)
+        if raw is None:
+            return None
+        return json.loads(raw)
+    except Exception:
         return None
-    return json.loads(raw)
 
 
 async def cache_set(
@@ -47,11 +51,17 @@ async def cache_set(
     """Store a JSON-serialisable value in Redis with a TTL.
 
     Default TTL is 1 hour (3600 seconds) — matching the model registry
-    cache requirement.
+    cache requirement. Silently ignores errors when Redis is unavailable.
     """
-    await client.set(key, json.dumps(value, default=str), ex=ttl_seconds)
+    try:
+        await client.set(key, json.dumps(value, default=str), ex=ttl_seconds)
+    except Exception:
+        pass
 
 
 async def cache_delete(client: aioredis.Redis, key: str) -> None:
-    """Delete a cache entry by key."""
-    await client.delete(key)
+    """Delete a cache entry by key. Silently ignores errors."""
+    try:
+        await client.delete(key)
+    except Exception:
+        pass
