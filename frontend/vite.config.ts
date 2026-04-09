@@ -19,9 +19,20 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    resolve: {
+      dedupe: ['react', 'react-dom'],
+    },
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'framer-motion'],
+    },
     server: {
+      port: 5174,
       proxy: {
         '/v1': {
+          target: env.VITE_API_URL || 'http://localhost:8000',
+          changeOrigin: true,
+        },
+        '/auth': {
           target: env.VITE_API_URL || 'http://localhost:8000',
           changeOrigin: true,
         },
