@@ -49,10 +49,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Qdrant
     try:
         from qdrant_client import AsyncQdrantClient
-        qdrant_client = AsyncQdrantClient(url=settings.qdrant_url)
+        qdrant_client = AsyncQdrantClient(url=settings.qdrant_url, timeout=2.0)
+        # Verify connection
+        await qdrant_client.get_collections()
         app.state.qdrant = qdrant_client
     except Exception:
-        app.state.qdrant = None
+        # Fallback to in-memory Qdrant client
+        from qdrant_client import AsyncQdrantClient
+        print("Falling back to in-memory Qdrant")
+        app.state.qdrant = AsyncQdrantClient(location=":memory:")
+
 
     # Langfuse
     try:
@@ -146,3 +152,7 @@ def create_app() -> FastAPI:
         )
 
     return app
+
+
+# Module-level instance for uvicorn: `uvicorn app.main:app`
+app = create_app()

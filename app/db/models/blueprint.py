@@ -12,7 +12,7 @@ import uuid
 from typing import Any
 
 from sqlalchemy import Float, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import JSON as JSONB, Uuid as UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
