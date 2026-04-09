@@ -19,13 +19,26 @@ from app.config import get_settings
 
 _settings = get_settings()
 
-engine = create_async_engine(
-    _settings.database_url,
-    echo=_settings.debug,
-    pool_size=10,
-    max_overflow=20,
-    pool_pre_ping=True,
-)
+def _make_engine():
+    url = _settings.database_url
+    if url.startswith("sqlite"):
+        # SQLite uses StaticPool — no pool_size / max_overflow
+        from sqlalchemy.pool import StaticPool
+        return create_async_engine(
+            url,
+            echo=_settings.debug,
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+    return create_async_engine(
+        url,
+        echo=_settings.debug,
+        pool_size=10,
+        max_overflow=20,
+        pool_pre_ping=True,
+    )
+
+engine = _make_engine()
 
 async_session_factory = async_sessionmaker(
     engine,
