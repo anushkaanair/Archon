@@ -1,69 +1,121 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BarChart3, Settings, LogOut, TerminalSquare } from 'lucide-react';
+import { LayoutDashboard, BarChart3, Settings, LogOut, TerminalSquare, ChevronRight } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
-const ArchonMark = ({ size = 28 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 28 28">
-    <polygon points="14,2 24,10 14,18 4,10" fill="#534AB7"/>
-    <polygon points="14,2 4,10 14,10" fill="#26215C"/>
-    <polygon points="14,2 24,10 14,10" fill="#7F77DD"/>
-    <polygon points="4,10 14,18 14,10" fill="#3C3489"/>
-    <polygon points="24,10 14,18 14,10" fill="#AFA9EC"/>
-    <circle cx="14" cy="10" r="2.5" fill="#EEEDFE" opacity="0.6"/>
+const ArchonMark = ({ size = 24 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 28 28" fill="none">
+    <polygon points="14,2 24,10 14,18 4,10" fill="#534AB7" />
+    <polygon points="14,2 4,10 14,10"  fill="#26215C" />
+    <polygon points="14,2 24,10 14,10" fill="#7F77DD" />
+    <polygon points="4,10 14,18 14,10" fill="#3C3489" />
+    <polygon points="24,10 14,18 14,10" fill="#AFA9EC" />
+    <circle cx="14" cy="10" r="2.5" fill="#EEEDFE" opacity="0.6" />
   </svg>
-)
+);
+
+const NAV_ITEMS = [
+  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+  { name: 'Builder',   path: '/builder',   icon: TerminalSquare },
+  { name: 'Analytics', path: '/analytics', icon: BarChart3 },
+  { name: 'Settings',  path: '/settings',  icon: Settings },
+];
 
 export default function SidebarLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
-  const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Builder', path: '/builder', icon: TerminalSquare },
-    { name: 'Analytics', path: '/analytics', icon: BarChart3 },
-    { name: 'Settings', path: '/settings', icon: Settings },
-  ];
+  const handleLogout = () => { logout?.(); navigate('/'); };
+
+  // Breadcrumb label from current path
+  const currentPage = NAV_ITEMS.find(n => location.pathname.startsWith(n.path))?.name ?? 'Archon';
 
   return (
-    <div className="flex h-screen bg-background text-white selection:bg-archon-core/30">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-white/5 bg-background flex flex-col items-start px-4 py-6">
-        <Link to="/" className="flex items-center gap-3 px-2 mb-10">
-          <ArchonMark size={24} />
-          <span className="text-lg font-medium tracking-tight text-white">Archon</span>
+    <div className="flex h-screen bg-[#07060e] text-white overflow-hidden">
+
+      {/* ─── Sidebar ──────────────────────────────────────────────────────── */}
+      <aside className="w-[220px] flex-shrink-0 flex flex-col border-r border-white/[0.055]"
+        style={{ background: 'rgba(255,255,255,0.012)', backdropFilter: 'blur(12px)' }}>
+
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2.5 px-5 h-[62px] border-b border-white/[0.055] hover:opacity-80 transition-opacity flex-shrink-0">
+          <ArchonMark size={20} />
+          <span className="text-[15px] font-semibold tracking-tight text-white">Archon</span>
+          <span className="badge-purple ml-auto text-[9px] px-2 py-0.5">Beta</span>
         </Link>
-        <div className="flex-1 w-full space-y-2">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            const Icon = item.icon;
+
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/20 px-2 mb-2 mt-1">Navigation</p>
+          {NAV_ITEMS.map(({ name, path, icon: Icon }) => {
+            const active = location.pathname === path || (path !== '/dashboard' && location.pathname.startsWith(path));
             return (
               <Link
-                key={item.name}
-                to={item.path}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-archon-core/10 text-archon-mist border border-archon-core/20 shadow-[0_0_15px_rgba(83,74,183,0.15)]'
-                    : 'text-white/50 hover:bg-white/5 hover:text-white'
+                key={path}
+                to={path}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[13px] font-medium transition-all group ${
+                  active ? 'nav-active text-white' : 'text-white/40 hover:text-white/80 hover:bg-white/[0.04]'
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                {item.name}
+                <Icon className={`w-4 h-4 transition-colors ${active ? 'text-archon-mist' : 'text-white/30 group-hover:text-white/60'}`} strokeWidth={active ? 2 : 1.5} />
+                {name}
+                {active && <ChevronRight className="w-3 h-3 ml-auto text-archon-core/50" />}
               </Link>
             );
           })}
+        </nav>
+
+        {/* User block */}
+        <div className="px-3 pb-4 border-t border-white/[0.055] pt-3 space-y-1">
+          {user && (
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] bg-white/[0.03]">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg,#534AB7,#AFA9EC)' }}>
+                {(user.name || user.email || 'A')[0].toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="text-[12px] font-medium text-white/80 truncate">{user.name || 'Admin'}</p>
+                <p className="text-[10px] text-white/30 truncate">{user.email || 'developer@archon.ai'}</p>
+              </div>
+            </div>
+          )}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-[10px] text-[13px] font-medium text-white/35 hover:text-white/70 hover:bg-white/[0.04] transition-all"
+          >
+            <LogOut className="w-4 h-4" strokeWidth={1.5} />
+            Log Out
+          </button>
         </div>
-        <Link
-          to="/"
-          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-white/50 hover:bg-white/5 hover:text-white transition-colors mt-auto"
-        >
-          <LogOut className="w-4 h-4" />
-          Log Out
-        </Link>
       </aside>
-      
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto relative">
-        <div className="absolute inset-x-0 top-0 h-[300px] bg-[radial-gradient(circle_at_top,rgba(83,74,183,0.08),transparent_80%)] pointer-events-none" />
-        <div className="relative z-10 w-full h-full p-8 max-w-7xl mx-auto">
-          <Outlet />
+
+      {/* ─── Main ─────────────────────────────────────────────────────────── */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+
+        {/* Top bar */}
+        <header className="h-[62px] flex-shrink-0 flex items-center justify-between px-8 border-b border-white/[0.055]"
+          style={{ background: 'rgba(255,255,255,0.012)' }}>
+          <div className="flex items-center gap-2 text-[13px]">
+            <span className="text-white/25">Archon</span>
+            <ChevronRight className="w-3.5 h-3.5 text-white/15" />
+            <span className="text-white/70 font-medium">{currentPage}</span>
+          </div>
+          <Link to="/builder"
+            className="flex items-center gap-2 h-8 px-4 rounded-lg text-[12px] font-semibold text-white transition-all"
+            style={{ background: 'linear-gradient(135deg,rgba(83,74,183,0.25),rgba(83,74,183,0.15))', border: '0.5px solid rgba(83,74,183,0.35)' }}>
+            + New Blueprint
+          </Link>
+        </header>
+
+        {/* Page content */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
+          {/* Ambient top glow */}
+          <div className="absolute top-0 left-0 right-0 h-[200px] pointer-events-none"
+            style={{ background: 'radial-gradient(ellipse 60% 100% at 50% 0%,rgba(83,74,183,0.06),transparent)' }} />
+          <div className="relative z-10 px-8 py-8 max-w-[1200px] mx-auto">
+            <Outlet />
+          </div>
         </div>
       </main>
     </div>
