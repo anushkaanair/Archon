@@ -1,24 +1,25 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BarChart3, Settings, LogOut, TerminalSquare, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, BarChart3, Settings, LogOut, TerminalSquare, ChevronRight, Workflow } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const ArchonMark = ({ size = 24 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 28 28" fill="none">
-    <polygon points="14,2 24,10 14,18 4,10" fill="#534AB7" />
-    <polygon points="14,2 4,10 14,10"  fill="#26215C" />
-    <polygon points="14,2 24,10 14,10" fill="#7F77DD" />
-    <polygon points="4,10 14,18 14,10" fill="#3C3489" />
-    <polygon points="24,10 14,18 14,10" fill="#AFA9EC" />
-    <circle cx="14" cy="10" r="2.5" fill="#EEEDFE" opacity="0.6" />
+    <polygon points="14,2 24,10 14,18 4,10" fill="#5B00E8" />
+    <polygon points="14,2 4,10 14,10"  fill="#1A0050" />
+    <polygon points="14,2 24,10 14,10" fill="#8B3DFF" />
+    <polygon points="4,10 14,18 14,10" fill="#2D0070" />
+    <polygon points="24,10 14,18 14,10" fill="#C4A0FF" />
+    <circle cx="14" cy="10" r="2.5" fill="#EDE5FF" opacity="0.6" />
   </svg>
 );
 
 const NAV_ITEMS = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'Builder',   path: '/builder',   icon: TerminalSquare },
-  { name: 'Analytics', path: '/analytics', icon: BarChart3 },
-  { name: 'Settings',  path: '/settings',  icon: Settings },
+  { name: 'Blueprint',  path: '/blueprint',  icon: TerminalSquare },
+  { name: 'Playground', path: '/builder',    icon: Workflow },
+  { name: 'Analytics',  path: '/analytics',  icon: BarChart3 },
+  { name: 'Settings',   path: '/settings',   icon: Settings },
 ];
 
 export default function SidebarLayout() {
@@ -58,9 +59,9 @@ export default function SidebarLayout() {
                   active ? 'nav-active text-white' : 'text-white/40 hover:text-white/80 hover:bg-white/[0.04]'
                 }`}
               >
-                <Icon className={`w-4 h-4 transition-colors ${active ? 'text-archon-mist' : 'text-white/30 group-hover:text-white/60'}`} strokeWidth={active ? 2 : 1.5} />
+                <Icon className={`w-4 h-4 transition-colors ${active ? 'text-archon-bright' : 'text-white/30 group-hover:text-white/60'}`} strokeWidth={active ? 2 : 1.5} />
                 {name}
-                {active && <ChevronRight className="w-3 h-3 ml-auto text-archon-core/50" />}
+                {active && <ChevronRight className="w-3 h-3 ml-auto text-archon-bright/50" />}
               </Link>
             );
           })}
@@ -70,10 +71,16 @@ export default function SidebarLayout() {
         <div className="px-3 pb-4 border-t border-white/[0.055] pt-3 space-y-1">
           {user && (
             <div className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] bg-white/[0.03]">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg,#534AB7,#AFA9EC)' }}>
-                {(user.name || user.email || 'A')[0].toUpperCase()}
-              </div>
+              {user.avatar_url ? (
+                <img src={user.avatar_url} alt={user.name || 'avatar'}
+                  className="w-7 h-7 rounded-full object-cover flex-shrink-0"
+                  style={{ border: '1.5px solid rgba(91,0,232,0.3)' }} />
+              ) : (
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0"
+                  style={{ background: 'linear-gradient(135deg,#5B00E8,#C4A0FF)' }}>
+                  {(user.name || user.email || 'A')[0].toUpperCase()}
+                </div>
+              )}
               <div className="min-w-0">
                 <p className="text-[12px] font-medium text-white/80 truncate">{user.name || 'Admin'}</p>
                 <p className="text-[10px] text-white/30 truncate">{user.email || 'developer@archon.ai'}</p>
@@ -101,9 +108,9 @@ export default function SidebarLayout() {
             <ChevronRight className="w-3.5 h-3.5 text-white/15" />
             <span className="text-white/70 font-medium">{currentPage}</span>
           </div>
-          <Link to="/builder"
+          <Link to="/blueprint"
             className="flex items-center gap-2 h-8 px-4 rounded-lg text-[12px] font-semibold text-white transition-all"
-            style={{ background: 'linear-gradient(135deg,rgba(83,74,183,0.25),rgba(83,74,183,0.15))', border: '0.5px solid rgba(83,74,183,0.35)' }}>
+            style={{ background: 'linear-gradient(135deg,rgba(91,0,232,0.25),rgba(91,0,232,0.15))', border: '0.5px solid rgba(91,0,232,0.35)' }}>
             + New Blueprint
           </Link>
         </header>

@@ -3,6 +3,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import SidebarLayout from './components/layout/SidebarLayout';
 import Builder from './pages/Builder';
+import Playground from './pages/Playground';
 import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
@@ -12,42 +13,23 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 
 const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <Home />,
-  },
-  {
-    path: '/login',
-    element: <Login />,
-  },
+  { path: '/', element: <Home /> },
+  { path: '/login', element: <Login /> },
   {
     element: <ProtectedRoute />,
     children: [
       {
         element: <SidebarLayout />,
         children: [
-          {
-            path: '/dashboard',
-            element: <Dashboard />,
-          },
-          {
-            path: '/builder',
-            element: <Builder />,
-          },
-          {
-            path: '/analytics',
-            element: <Analytics />,
-          },
-          {
-            path: '/settings',
-            element: <Settings />,
-          },
-          {
-            path: '/blueprints/:id',
-            element: <BlueprintDetail />,
-          },
+          { path: '/dashboard',       element: <Dashboard /> },
+          { path: '/blueprint',       element: <Builder /> },
+          { path: '/analytics',       element: <Analytics /> },
+          { path: '/settings',        element: <Settings /> },
+          { path: '/blueprints/:id',  element: <BlueprintDetail /> },
         ],
       },
+      // Playground has its own full-screen layout (no sidebar)
+      { path: '/builder', element: <Playground /> },
     ],
   },
 ]);
