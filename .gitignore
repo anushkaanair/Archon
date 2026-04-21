@@ -37,3 +37,14 @@ coverage.xml
 *.log
 docker_err.txt
 pip_out.txt
+
+# Local SQLite DB (production uses PostgreSQL on Render)
+*.db
+
+# Debug / utility scripts
+check_models.py
+debug_pipeline.py
+inspect_db.py
+reseed_models.py
+test_endpoint.py
+compose_up.log

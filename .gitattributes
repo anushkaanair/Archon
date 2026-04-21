@@ -1,0 +1,12 @@
+# Tell linguist the primary languages (overrides GitHub's auto-detection)
+*.py     linguist-language=Python
+*.tsx    linguist-language=TypeScript
+*.ts     linguist-language=TypeScript
+*.css    linguist-language=CSS
+
+# Suppress vendor / generated files from stats
+*.lock                  linguist-vendored
+dist/**                 linguist-vendored
+.venv/**                linguist-vendored
+frontend/node_modules/** linguist-vendored
+alembic/versions/**     linguist-vendored

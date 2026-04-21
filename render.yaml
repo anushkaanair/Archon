@@ -1,0 +1,30 @@
+# Render deployment configuration
+services:
+  - type: web
+    name: archon-backend
+    runtime: python
+    plan: free
+    rootDir: .
+    buildCommand: pip install -e .
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # Set manually in Render dashboard
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: API_KEY_HASH_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://archon-frontend.vercel.app
+      - key: PYTHON_VERSION
+        value: "3.11"
+    healthCheckPath: /health
+    autoDeploy: true
+
+databases:
+  - name: archon-db
+    plan: free
+    databaseName: archon
+    user: archon
