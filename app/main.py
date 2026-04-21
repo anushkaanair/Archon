@@ -109,9 +109,13 @@ def create_app() -> FastAPI:
     )
 
     # ── Middleware (order matters — last added = first executed) ──
+    import os
+    cors_raw = os.getenv("CORS_ORIGINS", "")
+    cors_origins = [o.strip() for o in cors_raw.split(",") if o.strip()] or ["*"]
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # Restrict in production
+        allow_origins=cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

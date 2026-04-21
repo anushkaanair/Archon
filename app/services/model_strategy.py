@@ -21,6 +21,25 @@ LATENCY_WEIGHT = 0.25
 QUALITY_WEIGHT = 0.30
 TASK_FIT_WEIGHT = 0.20
 
+# ── Task alias map ────────────────────────────────────────────────
+# Maps semantic-analyzer task slugs → registry capability strings.
+# Keeps the two namespaces decoupled without touching either side.
+TASK_ALIAS: dict[str, str] = {
+    "chatbot": "chat",
+    "fine_tuning": "code",
+    "summarisation": "summarisation",  # already matches
+    "image_generation": "multimodal",
+    "speech": "multimodal",
+    "recommendation": "chat",
+    "search": "search",
+    "rag": "rag",
+    "code_generation": "code",
+    "data_analysis": "data_analysis",
+    "classification": "classification",
+    "translation": "translation",
+    "agent": "agent",
+}
+
 
 def _normalise(values: list[float], invert: bool = False) -> list[float]:
     """Min-max normalise a list of values to [0, 1].
@@ -95,7 +114,15 @@ async def recommend_models(
     for task_info in detected_tasks:
         task = task_info["task"] if isinstance(task_info, dict) else task_info.task
 
-        models = await get_models_for_task(task, db, redis_client)
+        # Resolve task slug → registry capability string
+        capability = TASK_ALIAS.get(task, task)
+
+        models = await get_models_for_task(capability, db, redis_client)
+
+        # Widen to all models if none found for this capability
+        if not models:
+            from app.services.model_registry_service import get_all_models
+            models = await get_all_models(db, redis_client)
 
         if not models:
             continue
@@ -115,10 +142,19 @@ async def recommend_models(
             # Latency: use p95, fallback to 1000ms
             latencies.append(m.get("latency_p95_ms") or 1000)
 
-            # Quality: use arena_elo as primary, fallback to mmlu
+            # Quality: use arena_elo as primary (scale from 1000-1400 range), fallback to mmlu
             qs = m.get("quality_scores") or {}
-            quality = qs.get("arena_elo", qs.get("mmlu", 50)) / 100  # Normalise roughly
-            qualities.append(quality)
+            arena_elo = qs.get("arena_elo")
+            mmlu = qs.get("mmlu")
+            if arena_elo is not None:
+                # ELO is typically 900–1400; normalize relative to that range
+                quality = (float(arena_elo) - 900) / 500
+            elif mmlu is not None:
+                # MMLU can be 0-100 or 0-1
+                quality = float(mmlu) / 100 if float(mmlu) > 1 else float(mmlu)
+            else:
+                quality = 0.5
+            qualities.append(max(0.0, min(1.0, quality)))
 
             # Task fit
             fits.append(_compute_task_fit(m.get("capabilities", []), task))

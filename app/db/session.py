@@ -21,6 +21,9 @@ _settings = get_settings()
 
 def _make_engine():
     url = _settings.database_url
+    # Render provides postgresql:// but asyncpg requires postgresql+asyncpg://
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     if url.startswith("sqlite"):
         # SQLite uses StaticPool — no pool_size / max_overflow
         from sqlalchemy.pool import StaticPool

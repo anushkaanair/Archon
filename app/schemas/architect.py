@@ -32,6 +32,25 @@ class ArchitectRequest(BaseModel):
         description="If true, returns a job ID immediately (Celery). "
                     "If false, blocks until the blueprint is ready.",
     )
+    budget_monthly_usd: float | None = Field(
+        None,
+        ge=0,
+        description="Monthly budget cap in USD. None = unlimited.",
+    )
+    max_latency_ms: int | None = Field(
+        None,
+        ge=100,
+        description="Maximum acceptable P95 latency in milliseconds.",
+    )
+    request_volume: int | None = Field(
+        None,
+        ge=0,
+        description="Expected number of requests per month (used for cost projection).",
+    )
+    prefer_open_source: bool = Field(
+        False,
+        description="If true, bias model scoring toward open-source models.",
+    )
 
 
 class ArchitectResponse(BaseModel):

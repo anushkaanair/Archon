@@ -6,6 +6,7 @@ import Builder from './pages/Builder';
 import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import BlueprintDetail from './pages/BlueprintDetail';
 
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/layout/ProtectedRoute';
@@ -40,6 +41,10 @@ const router = createBrowserRouter([
           {
             path: '/settings',
             element: <Settings />,
+          },
+          {
+            path: '/blueprints/:id',
+            element: <BlueprintDetail />,
           },
         ],
       },
