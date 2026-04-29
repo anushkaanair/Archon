@@ -52,11 +52,18 @@ def generate_architecture(
     else:
         router_id = "input"
 
-    # Model nodes (one per unique model recommendation)
+    # Model nodes — top 1 model per task only (architecture shows the selected stack,
+    # not all evaluated candidates; the explanation covers alternatives).
     seen_models: set[str] = set()
     task_model_map: dict[str, list[str]] = {}
+    top_per_task: dict[str, ModelRecommendation] = {}
 
+    # Pick the highest-scoring recommendation per task
     for rec in recommendations:
+        if rec.task not in top_per_task:
+            top_per_task[rec.task] = rec
+
+    for task, rec in top_per_task.items():
         model_id = f"model_{rec.provider}_{rec.model_name}".replace("-", "_").replace(".", "_")
         if model_id not in seen_models:
             seen_models.add(model_id)

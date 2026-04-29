@@ -9,7 +9,6 @@ return the best available result rather than a 500.
 from __future__ import annotations
 
 import uuid
-import traceback
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -87,8 +86,11 @@ async def architect_endpoint(
     redis_client = getattr(request.app.state, "redis", None)
 
     # ── Stage 1: Semantic analysis ────────────────────────────
+    # Run in a thread pool — SentenceTransformer.encode() is CPU-bound and
+    # would block the event loop if called directly in an async handler.
     try:
-        detected = detect_tasks(body.input_text)
+        import asyncio
+        detected = await asyncio.to_thread(detect_tasks, body.input_text)
         task_dicts = [
             {"task": d.task, "confidence": d.confidence, "description": d.description}
             for d in detected
@@ -105,19 +107,25 @@ async def architect_endpoint(
         detected = []
 
     # ── Stage 2: Persist query ────────────────────────────────
-    query = None
+    # Always create a query record — blueprint.query_id is NOT NULL.
+    query = Query(
+        user_id=user.id,
+        input_text=body.input_text,
+        detected_tasks=task_dicts,
+        status="processing",
+        request_id=request_id,
+    )
+    db.add(query)
     try:
-        query = Query(
-            user_id=user.id,
-            input_text=body.input_text,
-            detected_tasks=task_dicts,
-            status="processing",
-            request_id=request_id,
-        )
-        db.add(query)
         await db.flush()
-    except Exception:
-        pass  # Non-fatal — continue without persisting
+    except Exception as e:
+        # Flush failed — roll back and raise; without a query_id we cannot
+        # persist the blueprint anyway.
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create query record: {e}",
+        )
 
     # ── Stage 3: Model recommendations ───────────────────────
     try:
@@ -208,17 +216,17 @@ async def architect_endpoint(
 
     try:
         blueprint = Blueprint(
-            query_id=query.id if query else None,
+            query_id=query.id,
             user_id=user.id,
             architecture_json=arch_json,
             architecture_diagram=arch_diagram,
-            model_recommendations=[r.model_dump() for r in recommendations],
+            model_recommendations=[r.model_dump(mode="json") for r in recommendations],
             cost_estimate=cost_estimate,
             latency_estimate=latency_estimate,
             explanation=explanation_data.get("explanation", ""),
-            benchmark_citations=[c.model_dump() for c in all_citations],
+            benchmark_citations=[c.model_dump(mode="json") for c in all_citations],
             eval_score=eval_result.composite,
-            eval_details=eval_result.model_dump(),
+            eval_details=eval_result.model_dump(mode="json"),
             confidence_flag=confidence_flag,
             status="final",
         )
@@ -226,11 +234,10 @@ async def architect_endpoint(
         await db.flush()
         blueprint_id = str(blueprint.id)
 
-        if query:
-            query.status = "completed"
-            await db.flush()
+        query.status = "completed"
+        await db.flush()
     except Exception:
-        pass  # Non-fatal — return result without persisting
+        pass  # Blueprint persist failed — response still returns best-effort data
 
     # Log via tracer (no-op if Langfuse not configured)
     try:
