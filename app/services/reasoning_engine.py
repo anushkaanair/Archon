@@ -139,7 +139,7 @@ async def _call_llm(prompt: str, settings: Any) -> str:
         try:
             import anthropic
 
-            client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+            client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key, timeout=15.0)
             response = await client.messages.create(
                 model="claude-sonnet-4-20250514",
                 max_tokens=2000,
@@ -154,7 +154,7 @@ async def _call_llm(prompt: str, settings: Any) -> str:
         try:
             from openai import AsyncOpenAI
 
-            client = AsyncOpenAI(api_key=settings.openai_api_key)
+            client = AsyncOpenAI(api_key=settings.openai_api_key, timeout=15.0)
             response = await client.chat.completions.create(
                 model="gpt-4o",
                 messages=[{"role": "user", "content": prompt}],
