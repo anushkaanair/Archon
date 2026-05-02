@@ -1,4 +1,5 @@
 # Render deployment configuration
+# Deploy at: https://dashboard.render.com/new/web
 services:
   - type: web
     name: archon-backend
@@ -9,17 +10,57 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
-        sync: false          # Set manually in Render dashboard
+        sync: false          # Set to your Render PostgreSQL URL
       - key: OPENAI_API_KEY
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
       - key: API_KEY_HASH_SECRET
         generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
       - key: CORS_ORIGINS
-        value: https://archon-frontend.vercel.app
+        value: "https://archon-frontend.vercel.app,https://archon.vercel.app"
       - key: PYTHON_VERSION
         value: "3.11"
+      # Disable HuggingFace Hub network checks (models cached from build)
+      - key: HF_HUB_OFFLINE
+        value: "1"
+      - key: TRANSFORMERS_OFFLINE
+        value: "1"
+      # Redis — leave blank to use in-memory fallback (no caching)
+      - key: REDIS_URL
+        sync: false
+      # Qdrant — leave blank to skip vector RAG
+      - key: QDRANT_URL
+        sync: false
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      # OAuth (optional — leave blank to disable SSO)
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        value: "https://archon-frontend.vercel.app"
+      - key: BACKEND_URL
+        value: "https://archon-backend.onrender.com"
+      - key: RATE_LIMIT_FREE
+        value: "100"
+      - key: RATE_LIMIT_PRO
+        value: "1000"
+      - key: MODEL_REGISTRY_CACHE_TTL
+        value: "3600"
+      - key: EMBEDDING_MODEL
+        value: "all-MiniLM-L6-v2"
     healthCheckPath: /health
     autoDeploy: true
 
