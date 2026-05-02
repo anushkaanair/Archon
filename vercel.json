@@ -1,22 +1,24 @@
 {
   "version": 2,
-  "builds": [
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "framework": null,
+  "rewrites": [
     {
-      "src": "frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/v1/(.*)",
-      "dest": "https://archon-backend.onrender.com/v1/$1"
+      "source": "/v1/:path*",
+      "destination": "https://archon-backend.onrender.com/v1/:path*"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/auth/:path*",
+      "destination": "https://archon-backend.onrender.com/auth/:path*"
+    },
+    {
+      "source": "/health",
+      "destination": "https://archon-backend.onrender.com/health"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
-  ],
+  ]
 }
