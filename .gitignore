@@ -41,6 +41,11 @@ pip_out.txt
 # Local SQLite DB (production uses PostgreSQL on Render)
 *.db
 
+# Claude Code internals
+.claude/
+.superpowers/
+docs/superpowers/
+
 # Debug / utility scripts
 check_models.py
 debug_pipeline.py
