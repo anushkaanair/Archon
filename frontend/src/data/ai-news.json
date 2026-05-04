@@ -1,0 +1,122 @@
+[
+  {
+    "id": "claude-sonnet-4-release",
+    "date": "2025-06-15",
+    "title": "Claude Sonnet 4 Released",
+    "summary": "Anthropic launches Claude Sonnet 4 with improved reasoning, 200K context, and 2× faster inference vs Sonnet 3.5.",
+    "type": "model_release",
+    "provider": "Anthropic",
+    "model_id": "claude-sonnet-4",
+    "link": "https://anthropic.com/news/claude-sonnet-4"
+  },
+  {
+    "id": "claude-opus-4-release",
+    "date": "2025-07-01",
+    "title": "Claude Opus 4 — Most Capable Claude Yet",
+    "summary": "Anthropic's flagship Claude Opus 4 sets new benchmarks on SWE-bench and reasoning evals. Extended thinking enabled by default.",
+    "type": "model_release",
+    "provider": "Anthropic",
+    "model_id": "claude-opus-4",
+    "link": "https://anthropic.com/news/claude-opus-4"
+  },
+  {
+    "id": "gpt-4o-price-drop",
+    "date": "2025-05-10",
+    "title": "OpenAI Cuts GPT-4o Pricing by 50%",
+    "summary": "OpenAI reduces GPT-4o input cost to $2.50/1M tokens and output to $10/1M — making it significantly more competitive.",
+    "type": "price_change",
+    "provider": "OpenAI",
+    "model_id": "gpt-4o",
+    "link": "https://openai.com/pricing"
+  },
+  {
+    "id": "gemini-2-flash-release",
+    "date": "2025-02-05",
+    "title": "Gemini 2.0 Flash Goes GA",
+    "summary": "Google's Gemini 2.0 Flash achieves GPT-4o-mini quality at 3× lower latency. Now available in all regions.",
+    "type": "model_release",
+    "provider": "Google",
+    "model_id": "gemini-2.0-flash",
+    "link": "https://deepmind.google/technologies/gemini"
+  },
+  {
+    "id": "deepseek-r1-release",
+    "date": "2025-01-20",
+    "title": "DeepSeek R1 Open-Sourced",
+    "summary": "DeepSeek releases R1 as fully open-source, rivaling o1 on math and coding benchmarks at a fraction of the API cost.",
+    "type": "model_release",
+    "provider": "DeepSeek",
+    "model_id": "deepseek-r1",
+    "link": "https://github.com/deepseek-ai/DeepSeek-R1"
+  },
+  {
+    "id": "o3-release",
+    "date": "2025-04-16",
+    "title": "OpenAI o3 Available via API",
+    "summary": "o3 brings frontier reasoning to the OpenAI API with configurable thinking budget. Outperforms o1 across all reasoning benchmarks.",
+    "type": "model_release",
+    "provider": "OpenAI",
+    "model_id": "o3",
+    "link": "https://openai.com/o3"
+  },
+  {
+    "id": "llama-3-3-release",
+    "date": "2024-12-06",
+    "title": "Meta Llama 3.3 70B — Dense SotA",
+    "summary": "Llama 3.3 70B achieves Llama 3.1 405B quality in a 70B parameter footprint, ideal for self-hosted inference.",
+    "type": "model_release",
+    "provider": "Meta",
+    "model_id": "llama-3.3-70b",
+    "link": "https://ai.meta.com/llama"
+  },
+  {
+    "id": "gemini-anthropic-collab",
+    "date": "2025-03-12",
+    "title": "Google × Anthropic — Frontier Safety Pact",
+    "summary": "Google DeepMind and Anthropic sign a joint safety research agreement covering frontier model evaluation frameworks.",
+    "type": "collab",
+    "provider": null,
+    "model_id": null,
+    "link": null
+  },
+  {
+    "id": "mistral-large-price-cut",
+    "date": "2025-04-01",
+    "title": "Mistral Large 2 Pricing Reduced",
+    "summary": "Mistral cuts Mistral Large 2 pricing by 35%, making it the most cost-competitive European frontier model.",
+    "type": "price_change",
+    "provider": "Mistral",
+    "model_id": "mistral-large",
+    "link": "https://mistral.ai/pricing"
+  },
+  {
+    "id": "claude-haiku-4-release",
+    "date": "2025-07-15",
+    "title": "Claude Haiku 4 — Fastest Claude",
+    "summary": "Haiku 4 delivers Claude Sonnet 3.5-level quality at sub-200ms TTFT. Best-in-class for real-time applications.",
+    "type": "model_release",
+    "provider": "Anthropic",
+    "model_id": "claude-haiku-4",
+    "link": "https://anthropic.com/claude/haiku"
+  },
+  {
+    "id": "grok2-release",
+    "date": "2024-12-10",
+    "title": "xAI Grok 2 via API",
+    "summary": "xAI opens Grok 2 to API developers with vision support and 131K context. Available on api.x.ai.",
+    "type": "model_release",
+    "provider": "xAI",
+    "model_id": "grok-2",
+    "link": "https://x.ai/api"
+  },
+  {
+    "id": "qwen25-coder-release",
+    "date": "2024-11-15",
+    "title": "Qwen 2.5 Coder 32B Surpasses GPT-4o on Code",
+    "summary": "Alibaba's Qwen 2.5 Coder 32B tops HumanEval and SWE-bench Lite, open-sourced under Apache 2.0.",
+    "type": "model_release",
+    "provider": "Alibaba",
+    "model_id": "qwen-2.5-coder",
+    "link": "https://huggingface.co/Qwen"
+  }
+]
