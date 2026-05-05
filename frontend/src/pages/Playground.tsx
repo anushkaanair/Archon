@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play, Save, FolderOpen, Trash2, ZoomIn, ZoomOut, X,
-  ChevronDown, Loader2, CheckCircle2, AlertCircle, Plus,
+  ChevronDown, Loader2, CheckCircle2, Plus,
   Cpu, Database, GitBranch, Terminal, ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -43,7 +43,7 @@ const NODE_DEFS: Record<NodeType, {
   border: string;
   bg: string;
   textColor: string;
-  icon: React.FC<{ className?: string }>;
+  icon: React.FC<{ className?: string; style?: React.CSSProperties }>;
   ports: { in: string[]; out: string[] };
   defaultConfig: Record<string, string | number | boolean>;
   configFields: { key: string; label: string; type: 'text' | 'select' | 'number' | 'textarea'; options?: string[] }[];
@@ -153,7 +153,6 @@ function NodeCard({
   zoom: number;
 }) {
   const def = NODE_DEFS[node.type];
-  const Icon = def.icon;
 
   const statusColor =
     node.status === 'running' ? '#D97706' :
@@ -372,7 +371,7 @@ function RunModal({ onRun, onClose }: { onRun: (prompt: string) => void; onClose
 
 /* ─── Main ────────────────────────────────────────────────────────────────────── */
 export default function Playground() {
-  const { token } = useAuth();
+  useAuth(); // auth context — token used in future API calls
   const svgRef = useRef<SVGSVGElement>(null);
 
   const [nodes, setNodes]           = useState<PipelineNode[]>(STARTER_NODES);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, Loader2, FileJson, FileText } from 'lucide-react';
+import { Download, Loader2, FileJson } from 'lucide-react';
 
 interface DownloadButtonProps {
   blueprintData: any;

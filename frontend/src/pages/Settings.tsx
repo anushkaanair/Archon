@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Key, Shield, Copy, Check, Eye, EyeOff, User, Mail, LogOut,
-  Plus, Database, ChevronDown, CheckCircle2, AlertCircle, Sliders,
+  Plus, Database, ChevronDown, CheckCircle2, Sliders,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';

@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard, Cpu, BarChart3, Settings, FlaskConical,
-  Hammer, ChevronLeft, ChevronRight, LogOut, User, Sparkles,
+  LayoutDashboard, BarChart3, Settings, FlaskConical,
+  Hammer, ChevronLeft, ChevronRight, LogOut, Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -26,7 +26,7 @@ const NAV = [
   { to: '/settings',   label: 'Settings',  icon: Settings },
 ];
 
-export default function SidebarLayout({ children }: { children: React.ReactNode }) {
+export default function SidebarLayout() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -176,7 +176,7 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
 
         {/* Page content */}
         <main className="flex-1 overflow-auto" style={{ background: '#F4F2FF' }}>
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>
