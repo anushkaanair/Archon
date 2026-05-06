@@ -157,7 +157,7 @@ export default function Settings() {
   const initial = (user?.name || user?.email || 'U')[0].toUpperCase();
 
   return (
-    <div className="flex h-full min-h-0">
+    <div className="flex h-full min-h-0 overflow-hidden">
 
       {/* ── Left navigation ── */}
       <div className="w-56 flex-shrink-0 flex flex-col py-6 px-3"
