@@ -19,11 +19,11 @@ const ArchonMark = ({ size = 24 }: { size?: number }) => (
 );
 
 const NAV = [
-  { to: '/dashboard',  label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/builder',    label: 'Builder',   icon: Hammer },
-  { to: '/analytics',  label: 'Analytics', icon: BarChart3 },
-  { to: '/playground', label: 'Playground',icon: FlaskConical },
-  { to: '/settings',   label: 'Settings',  icon: Settings },
+  { to: '/dashboard',  label: 'Dashboard', icon: LayoutDashboard, badge: null },
+  { to: '/builder',    label: 'Builder',   icon: Hammer,          badge: null },
+  { to: '/analytics',  label: 'Analytics', icon: BarChart3,       badge: null },
+  { to: '/playground', label: 'Playground',icon: FlaskConical,    badge: 'NEW' },
+  { to: '/settings',   label: 'Settings',  icon: Settings,        badge: null },
 ];
 
 export default function SidebarLayout() {
@@ -69,40 +69,50 @@ export default function SidebarLayout() {
 
         {/* Nav */}
         <nav className="flex-1 py-3 px-2 space-y-0.5">
-          {NAV.map(({ to, label, icon: Icon }) => {
+          {NAV.map(({ to, label, icon: Icon, badge }) => {
             const active = location.pathname.startsWith(to);
             return (
-              <Link key={to} to={to}>
+              <Link key={to} to={to} title={collapsed ? label : undefined}>
                 <motion.div
-                  whileHover={{ x: 2 }}
+                  whileHover={{ x: collapsed ? 0 : 2 }}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative"
                   style={{
-                    background: active ? 'rgba(91,0,232,0.08)' : 'transparent',
+                    background: active ? 'rgba(91,0,232,0.09)' : 'transparent',
                     color: active ? '#5B00E8' : '#64748B',
+                    boxShadow: active ? 'inset 0 0 0 1px rgba(91,0,232,0.12)' : 'none',
                   }}
-                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(91,0,232,0.04)'; }}
+                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(91,0,232,0.05)'; }}
                   onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                 >
                   {active && (
                     <motion.div
                       layoutId="sidebar-active"
-                      className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full"
-                      style={{ background: '#5B00E8' }}
+                      className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full"
+                      style={{ background: 'linear-gradient(180deg, #5B00E8, #8B3DFF)' }}
                     />
                   )}
-                  <Icon size={18} strokeWidth={active ? 2 : 1.5} />
+                  <Icon size={18} strokeWidth={active ? 2.25 : 1.6} />
                   <AnimatePresence>
                     {!collapsed && (
                       <motion.span
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="text-[13px] font-medium whitespace-nowrap"
+                        className="text-[13px] font-medium whitespace-nowrap flex-1"
                       >
                         {label}
                       </motion.span>
                     )}
                   </AnimatePresence>
+                  {/* Badge */}
+                  {badge && !collapsed && (
+                    <motion.span
+                      initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
+                      className="text-[8px] font-black px-1.5 py-0.5 rounded-md tracking-wide"
+                      style={{ background: 'linear-gradient(135deg, #5B00E8, #8B3DFF)', color: 'white' }}>
+                      {badge}
+                    </motion.span>
+                  )}
                 </motion.div>
               </Link>
             );
@@ -158,18 +168,30 @@ export default function SidebarLayout() {
         <header className="flex items-center gap-4 px-6 py-0 border-b flex-shrink-0"
           style={{ height: 64, background: '#FFFFFF', borderColor: 'rgba(91,0,232,0.08)', boxShadow: '0 1px 8px rgba(91,0,232,0.04)' }}>
           <div className="flex items-center gap-2">
-            <Sparkles size={16} style={{ color: '#5B00E8' }} />
-            <h1 className="text-[15px] font-semibold" style={{ color: '#0D0D0D' }}>{pageTitle}</h1>
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: 'rgba(91,0,232,0.08)' }}>
+              <Sparkles size={13} style={{ color: '#5B00E8' }} />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[12px] font-medium" style={{ color: 'rgba(10,0,37,0.35)' }}>Archon</span>
+              <span className="text-[12px]" style={{ color: 'rgba(10,0,37,0.2)' }}>/</span>
+              <h1 className="text-[14px] font-bold" style={{ color: '#0D0D0D' }}>{pageTitle}</h1>
+            </div>
           </div>
           <div className="ml-auto flex items-center gap-3">
             {user && (
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-bold"
+              <Link to="/settings" className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all"
+                style={{ background: 'rgba(91,0,232,0.04)', border: '1px solid rgba(91,0,232,0.1)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(91,0,232,0.08)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(91,0,232,0.04)'; }}>
+                <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
                   style={{ background: 'linear-gradient(135deg, #5B00E8, #C4A0FF)' }}>
                   {(user.name || user.email || 'U')[0].toUpperCase()}
                 </div>
-                <span className="text-[13px] font-medium" style={{ color: '#334155' }}>{user.name || user.email}</span>
-              </div>
+                <span className="text-[12px] font-medium hidden sm:block" style={{ color: '#334155' }}>
+                  {user.name || user.email}
+                </span>
+              </Link>
             )}
           </div>
         </header>
