@@ -1,5 +1,85 @@
 [
   {
+    "id": "gemini-2-5-pro-release",
+    "date": "2026-05-01",
+    "title": "Gemini 2.5 Pro Goes GA",
+    "summary": "Google's Gemini 2.5 Pro is now generally available with a 2M context window, native audio/video output, and 40% better reasoning than 2.0 Ultra.",
+    "type": "model_release",
+    "provider": "Google",
+    "model_id": "gemini-2.5-pro",
+    "link": "https://deepmind.google/technologies/gemini"
+  },
+  {
+    "id": "claude-3-7-sonnet-release",
+    "date": "2026-04-28",
+    "title": "Claude 3.7 Sonnet — Extended Thinking",
+    "summary": "Anthropic ships Claude 3.7 Sonnet with configurable extended thinking chains up to 128K reasoning tokens. Tops the LMSYS Chatbot Arena leaderboard.",
+    "type": "model_release",
+    "provider": "Anthropic",
+    "model_id": "claude-3-7-sonnet",
+    "link": "https://anthropic.com/news"
+  },
+  {
+    "id": "openai-o4-mini-release",
+    "date": "2026-04-16",
+    "title": "OpenAI o4-mini: Frontier Reasoning at Mini Prices",
+    "summary": "o4-mini matches o3 on math and coding benchmarks at 80% lower cost. Available via API with tool use and vision.",
+    "type": "model_release",
+    "provider": "OpenAI",
+    "model_id": "o4-mini",
+    "link": "https://openai.com/blog"
+  },
+  {
+    "id": "deepseek-v3-price-cut",
+    "date": "2026-04-10",
+    "title": "DeepSeek V3 API Price Drops 60%",
+    "summary": "DeepSeek slashes V3 API pricing to $0.27/1M input tokens, making it the cheapest frontier-class model available via API.",
+    "type": "price_change",
+    "provider": "DeepSeek",
+    "model_id": "deepseek-v3",
+    "link": "https://platform.deepseek.com/pricing"
+  },
+  {
+    "id": "llama-4-scout-release",
+    "date": "2026-04-05",
+    "title": "Meta Llama 4 Scout & Maverick Released",
+    "summary": "Meta's Llama 4 Scout (17B MoE) achieves Llama 3.1 405B quality with 10M token context. Maverick tops GPT-4o on most benchmarks.",
+    "type": "model_release",
+    "provider": "Meta",
+    "model_id": "llama-4-scout",
+    "link": "https://ai.meta.com/llama"
+  },
+  {
+    "id": "mistral-medium-3-release",
+    "date": "2026-03-28",
+    "title": "Mistral Medium 3 — Best European Frontier",
+    "summary": "Mistral Medium 3 tops MMLU and HumanEval leaderboards for European-hosted models. GDPR-compliant deployment available in EU regions.",
+    "type": "model_release",
+    "provider": "Mistral",
+    "model_id": "mistral-medium-3",
+    "link": "https://mistral.ai"
+  },
+  {
+    "id": "anthropic-openai-safety-pact",
+    "date": "2026-03-18",
+    "title": "Anthropic + OpenAI Joint Safety Initiative",
+    "summary": "Anthropic and OpenAI announce shared frontier safety research, including a joint red-teaming protocol for models above GPT-4-class capability.",
+    "type": "collab",
+    "provider": null,
+    "model_id": null,
+    "link": null
+  },
+  {
+    "id": "gpt-4o-price-drop-2026",
+    "date": "2026-03-05",
+    "title": "OpenAI Cuts GPT-4o Pricing Again",
+    "summary": "Another 30% cut to GPT-4o — input now $1.75/1M tokens. Cached input tokens drop to $0.88/1M.",
+    "type": "price_change",
+    "provider": "OpenAI",
+    "model_id": "gpt-4o",
+    "link": "https://openai.com/pricing"
+  },
+  {
     "id": "claude-sonnet-4-release",
     "date": "2025-06-15",
     "title": "Claude Sonnet 4 Released",
@@ -20,14 +100,14 @@
     "link": "https://anthropic.com/news/claude-opus-4"
   },
   {
-    "id": "gpt-4o-price-drop",
-    "date": "2025-05-10",
-    "title": "OpenAI Cuts GPT-4o Pricing by 50%",
-    "summary": "OpenAI reduces GPT-4o input cost to $2.50/1M tokens and output to $10/1M — making it significantly more competitive.",
-    "type": "price_change",
+    "id": "o3-release",
+    "date": "2025-04-16",
+    "title": "OpenAI o3 Available via API",
+    "summary": "o3 brings frontier reasoning to the OpenAI API with configurable thinking budget. Outperforms o1 across all reasoning benchmarks.",
+    "type": "model_release",
     "provider": "OpenAI",
-    "model_id": "gpt-4o",
-    "link": "https://openai.com/pricing"
+    "model_id": "o3",
+    "link": "https://openai.com/o3"
   },
   {
     "id": "gemini-2-flash-release",
@@ -48,66 +128,6 @@
     "provider": "DeepSeek",
     "model_id": "deepseek-r1",
     "link": "https://github.com/deepseek-ai/DeepSeek-R1"
-  },
-  {
-    "id": "o3-release",
-    "date": "2025-04-16",
-    "title": "OpenAI o3 Available via API",
-    "summary": "o3 brings frontier reasoning to the OpenAI API with configurable thinking budget. Outperforms o1 across all reasoning benchmarks.",
-    "type": "model_release",
-    "provider": "OpenAI",
-    "model_id": "o3",
-    "link": "https://openai.com/o3"
-  },
-  {
-    "id": "llama-3-3-release",
-    "date": "2024-12-06",
-    "title": "Meta Llama 3.3 70B — Dense SotA",
-    "summary": "Llama 3.3 70B achieves Llama 3.1 405B quality in a 70B parameter footprint, ideal for self-hosted inference.",
-    "type": "model_release",
-    "provider": "Meta",
-    "model_id": "llama-3.3-70b",
-    "link": "https://ai.meta.com/llama"
-  },
-  {
-    "id": "gemini-anthropic-collab",
-    "date": "2025-03-12",
-    "title": "Google × Anthropic — Frontier Safety Pact",
-    "summary": "Google DeepMind and Anthropic sign a joint safety research agreement covering frontier model evaluation frameworks.",
-    "type": "collab",
-    "provider": null,
-    "model_id": null,
-    "link": null
-  },
-  {
-    "id": "mistral-large-price-cut",
-    "date": "2025-04-01",
-    "title": "Mistral Large 2 Pricing Reduced",
-    "summary": "Mistral cuts Mistral Large 2 pricing by 35%, making it the most cost-competitive European frontier model.",
-    "type": "price_change",
-    "provider": "Mistral",
-    "model_id": "mistral-large",
-    "link": "https://mistral.ai/pricing"
-  },
-  {
-    "id": "claude-haiku-4-release",
-    "date": "2025-07-15",
-    "title": "Claude Haiku 4 — Fastest Claude",
-    "summary": "Haiku 4 delivers Claude Sonnet 3.5-level quality at sub-200ms TTFT. Best-in-class for real-time applications.",
-    "type": "model_release",
-    "provider": "Anthropic",
-    "model_id": "claude-haiku-4",
-    "link": "https://anthropic.com/claude/haiku"
-  },
-  {
-    "id": "grok2-release",
-    "date": "2024-12-10",
-    "title": "xAI Grok 2 via API",
-    "summary": "xAI opens Grok 2 to API developers with vision support and 131K context. Available on api.x.ai.",
-    "type": "model_release",
-    "provider": "xAI",
-    "model_id": "grok-2",
-    "link": "https://x.ai/api"
   },
   {
     "id": "qwen25-coder-release",
