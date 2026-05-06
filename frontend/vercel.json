@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/v1/:path*",
+      "destination": "https://REPLACE_WITH_RAILWAY_URL/v1/:path*"
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "https://REPLACE_WITH_RAILWAY_URL/auth/:path*"
+    }
+  ]
+}
