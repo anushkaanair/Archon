@@ -21,15 +21,16 @@ const router = createBrowserRouter([
       {
         element: <SidebarLayout />,
         children: [
-          { path: '/dashboard',       element: <Dashboard /> },
-          { path: '/blueprint',       element: <Builder /> },
-          { path: '/analytics',       element: <Analytics /> },
-          { path: '/settings',        element: <Settings /> },
-          { path: '/blueprints/:id',  element: <BlueprintDetail /> },
+          { path: '/dashboard',      element: <Dashboard /> },
+          { path: '/builder',        element: <Builder /> },      // Blueprint Builder form
+          { path: '/analytics',      element: <Analytics /> },
+          { path: '/playground',     element: <Playground /> },   // Visual node editor
+          { path: '/settings',       element: <Settings /> },
+          { path: '/blueprints/:id', element: <BlueprintDetail /> },
+          // Legacy redirect support
+          { path: '/blueprint',      element: <Builder /> },
         ],
       },
-      // Playground has its own full-screen layout (no sidebar)
-      { path: '/builder', element: <Playground /> },
     ],
   },
 ]);
