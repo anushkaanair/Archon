@@ -15,6 +15,7 @@ import LatencyTable from '../components/ui/LatencyTable';
 import ScoreGauge from '../components/ui/ScoreGauge';
 import DownloadButton from '../components/ui/DownloadButton';
 import ConstraintInputs from '../components/ui/ConstraintInputs';
+import { generateMockBlueprint } from '../data/mockBlueprint';
 
 /* ─── Example prompts ───────────────────────────────────────────────────── */
 const EXAMPLES = [
@@ -303,7 +304,6 @@ export default function Builder() {
   const [currentStep, setCurrentStep] = useState(0);
   const [elapsedMs, setElapsedMs]     = useState(0);
   const [result, setResult]           = useState<any>(null);
-  const [error, setError]             = useState('');
 
   const timerRef     = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -338,10 +338,12 @@ export default function Builder() {
     }
   };
 
+  const [offlineDemo, setOfflineDemo] = useState(false);
+
   const handleBuild = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim()) return;
-    setLoading(true); setError(''); setResult(null); setElapsedMs(0);
+    setLoading(true); setResult(null); setElapsedMs(0); setOfflineDemo(false);
     simulateProgress();
     try {
       const res = await fetch('/v1/architect', {
@@ -360,40 +362,31 @@ export default function Builder() {
         }),
       });
 
-      // Safely read + parse the response body
       const raw = await res.text();
-      if (!raw || !raw.trim()) {
-        setError('Backend returned an empty response. Make sure the backend server is running at http://localhost:8000');
-        return;
+
+      // Backend returned something valid
+      if (raw && raw.trim()) {
+        try {
+          const data = JSON.parse(raw);
+          if (res.ok) { setResult(data); return; }
+          // HTTP error with body — fall through to demo
+        } catch { /* invalid JSON — fall through to demo */ }
       }
 
-      let data: any;
-      try {
-        data = JSON.parse(raw);
-      } catch {
-        setError('Received invalid response from the backend. Is the server running correctly?');
-        return;
-      }
-
-      if (!res.ok) {
-        setError(data?.detail || data?.message || `Server error (${res.status})`);
-        return;
-      }
-
-      setResult(data);
-    } catch (err: any) {
-      if (err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError')) {
-        setError('Cannot reach backend — start the server: uvicorn app.main:app --reload (port 8000)');
-      } else {
-        setError(err?.message || 'Unexpected error. Check the browser console.');
-      }
+      // Empty or invalid response → show demo blueprint
+      setOfflineDemo(true);
+      setResult(generateMockBlueprint(prompt, requestVolume));
+    } catch {
+      // Network error (backend not running) → show demo blueprint
+      setOfflineDemo(true);
+      setResult(generateMockBlueprint(prompt, requestVolume));
     } finally {
       setLoading(false);
     }
   };
 
   const resetForm = () => {
-    setResult(null); setError(''); setCurrentStep(0); setPrompt('');
+    setResult(null); setOfflineDemo(false); setCurrentStep(0); setPrompt('');
     try { localStorage.removeItem('archon_builder_draft'); } catch { /* ignore */ }
   };
 
@@ -459,6 +452,21 @@ export default function Builder() {
 
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 lg:p-8 space-y-5 max-w-5xl">
+
+        {/* Offline demo notice */}
+        {offlineDemo && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-3 rounded-xl px-5 py-3.5 text-[13px]"
+            style={{ background: 'rgba(37,99,235,0.06)', border: '1.5px solid rgba(37,99,235,0.2)', color: '#2563EB' }}>
+            <ServerOff className="w-4 h-4 flex-shrink-0" />
+            <span>
+              <strong>Demo blueprint</strong> — backend is offline. Results are AI-generated estimates based on your description.
+              Start the server with <code className="font-mono text-[12px] px-1.5 py-0.5 rounded mx-1"
+                style={{ background: 'rgba(37,99,235,0.1)' }}>uvicorn app.main:app --reload</code>
+              for live analysis.
+            </span>
+          </motion.div>
+        )}
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -801,21 +809,6 @@ export default function Builder() {
             </AnimatePresence>
           </div>
 
-          {/* Error */}
-          <AnimatePresence>
-            {error && (
-              <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                className="flex items-start gap-3 rounded-xl px-5 py-4 text-[13px]"
-                style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', color: '#EF4444' }}>
-                <ServerOff className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold mb-0.5">Backend not reachable</p>
-                  <p className="text-[12px] opacity-80">{error}</p>
-                  <p className="text-[11px] mt-1 opacity-60">Run: <code className="font-mono bg-red-50 px-1 rounded">cd archon && uvicorn app.main:app --reload</code></p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {/* Submit */}
           <div className="flex items-center justify-between gap-4 pt-1">
