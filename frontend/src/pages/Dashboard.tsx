@@ -118,7 +118,7 @@ function EmptyState() {
         <p className="text-[13px] text-[#6B7280] mb-6 max-w-xs leading-relaxed">
           Generate your first AI architecture blueprint and it'll appear here with scores, costs, and models.
         </p>
-        <Link to="/blueprint"
+        <Link to="/builder"
           className="inline-flex items-center gap-2 h-11 px-7 rounded-xl text-[13px] font-bold text-white transition-all"
           style={{ background: 'linear-gradient(135deg, #5B00E8, #7C3AED)', boxShadow: '0 4px 20px rgba(91,0,232,0.35)' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 28px rgba(91,0,232,0.45)'; }}
@@ -133,7 +133,7 @@ function EmptyState() {
         </p>
         <div className="grid grid-cols-2 gap-2">
           {TEMPLATES.map(ex => (
-            <Link key={ex.title} to="/blueprint"
+            <Link key={ex.title} to="/builder"
               className="group flex items-start gap-3 px-4 py-3.5 rounded-xl bg-white transition-all"
               style={{ border: '1.5px solid rgba(91,0,232,0.08)' }}
               onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = `${ex.color}30`; (e.currentTarget as HTMLAnchorElement).style.background = `${ex.color}04`; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px)'; }}
@@ -218,22 +218,31 @@ export default function Dashboard() {
   const [error, setError]               = useState('');
 
   useEffect(() => {
+    const safeJson = async (res: Response) => {
+      const text = await res.text();
+      if (!text || !text.trim()) return null;
+      try { return JSON.parse(text); } catch { return null; }
+    };
     fetch('/v1/dashboard/stats', { headers })
-      .then(r => r.json()).then(d => { setStats(d); setStatsLoading(false); })
+      .then(safeJson).then(d => { if (d) setStats(d); setStatsLoading(false); })
       .catch(() => setStatsLoading(false));
     fetch('/v1/blueprints?limit=10', { headers })
-      .then(r => r.json()).then(d => { setBlueprints(d.items || []); setBpLoading(false); })
+      .then(safeJson).then(d => { if (d) setBlueprints(d.items || []); setBpLoading(false); })
       .catch(() => { setError('Backend offline — showing demo data'); setBpLoading(false); });
   }, []);
 
   const downloadBlueprint = async (id: string) => {
-    const res  = await fetch(`/v1/blueprints/${id}`, { headers });
-    const data = await res.json();
-    const a = Object.assign(document.createElement('a'), {
-      href: URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })),
-      download: `archon-blueprint-${id.slice(0, 8)}.json`,
-    });
-    a.click();
+    try {
+      const res  = await fetch(`/v1/blueprints/${id}`, { headers });
+      const text = await res.text();
+      if (!text || !text.trim()) return;
+      const data = JSON.parse(text);
+      const a = Object.assign(document.createElement('a'), {
+        href: URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })),
+        download: `archon-blueprint-${id.slice(0, 8)}.json`,
+      });
+      a.click();
+    } catch { /* silently ignore download failures */ }
   };
 
   const fmt = (iso: string | null) => {
@@ -274,7 +283,7 @@ export default function Dashboard() {
               </h1>
               <p className="text-[13px] text-white/65">Blueprint history, model scores and usage at a glance.</p>
             </div>
-            <Link to="/blueprint"
+            <Link to="/builder"
               className="flex items-center gap-2 h-10 px-5 rounded-xl text-[13px] font-bold text-[#5B00E8] flex-shrink-0 transition-all"
               style={{ background: 'white', boxShadow: '0 2px 16px rgba(0,0,0,0.15)' }}
               onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 6px 24px rgba(0,0,0,0.2)'; }}
