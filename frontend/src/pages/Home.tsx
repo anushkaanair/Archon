@@ -777,6 +777,38 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ─── Features strip ─────────────────────────────────────────────────── */}
+      <section className="py-20" style={{ background: '#fff' }}>
+        <div className="max-w-7xl mx-auto px-6">
+          <FadeIn className="text-center mb-12">
+            <p className="text-[11px] font-bold uppercase tracking-widest mb-4" style={{ color: '#5B00E8' }}>Everything in one tool</p>
+            <h2 style={{ fontFamily: 'Bricolage Grotesque, sans-serif', fontWeight: 800, fontSize: 'clamp(28px,3vw,42px)', color: '#0A0025', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+              Build, evaluate, visualise.<br />
+              <span style={{ color: '#5B00E8' }}>All in your browser.</span>
+            </h2>
+          </FadeIn>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { icon: '🧠', title: 'Blueprint Builder', desc: 'Describe your product in plain English. Get a ranked architecture with cost + latency estimates.' },
+              { icon: '🔬', title: 'Pipeline Playground', desc: 'Drag-and-drop visual node editor. Wire LLMs, retrievers, and routers together and run them live.' },
+              { icon: '📊', title: 'Analytics Dashboard', desc: 'Track cost, P95 latency, and RAGAs quality scores across all your blueprints over time.' },
+              { icon: '⚙️', title: 'Model Registry', desc: 'Compare 30+ models by cost, speed, and domain. Request unlisted models directly from the app.' },
+            ].map(f => (
+              <FadeIn key={f.title} delay={0.05}>
+                <div className="rounded-2xl p-6 h-full transition-all cursor-default group"
+                  style={{ border: '1.5px solid rgba(91,0,232,0.1)', background: 'rgba(91,0,232,0.02)' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(91,0,232,0.25)'; (e.currentTarget as HTMLElement).style.background = 'rgba(91,0,232,0.04)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(91,0,232,0.1)'; (e.currentTarget as HTMLElement).style.background = 'rgba(91,0,232,0.02)'; (e.currentTarget as HTMLElement).style.transform = ''; }}>
+                  <div className="text-3xl mb-4">{f.icon}</div>
+                  <h3 className="font-bold text-[15px] mb-2" style={{ color: '#0A0025', fontFamily: 'Bricolage Grotesque, sans-serif' }}>{f.title}</h3>
+                  <p className="text-[13px] leading-relaxed" style={{ color: 'rgba(10,0,37,0.5)' }}>{f.desc}</p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ─── CTA ─────────────────────────────────────────────────────────────── */}
       <section className="relative py-32 overflow-hidden" style={{ background: 'var(--violet-deep)' }}>
         {/* Grid */}
@@ -797,15 +829,24 @@ export default function Home() {
             <p className="text-[16px] mb-10" style={{ color: 'rgba(255,255,255,0.5)' }}>
               No credit card required · Free tier available
             </p>
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-2 h-14 px-10 rounded-xl font-bold text-[16px] transition-all"
-              style={{ background: '#fff', color: '#5B00E8', boxShadow: '0 4px 32px rgba(255,255,255,0.15)' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 8px 48px rgba(255,255,255,0.25)'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-2px)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 4px 32px rgba(255,255,255,0.15)'; (e.currentTarget as HTMLAnchorElement).style.transform = 'none'; }}
-            >
-              Start building for free →
-            </Link>
+            <div className="flex items-center justify-center gap-4 flex-wrap">
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-2 h-14 px-10 rounded-xl font-bold text-[16px] transition-all"
+                style={{ background: '#fff', color: '#5B00E8', boxShadow: '0 4px 32px rgba(255,255,255,0.15)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 8px 48px rgba(255,255,255,0.25)'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 4px 32px rgba(255,255,255,0.15)'; (e.currentTarget as HTMLAnchorElement).style.transform = 'none'; }}
+              >
+                Start building for free →
+              </Link>
+              <a href="#how-it-works"
+                className="inline-flex items-center gap-2 h-14 px-8 rounded-xl font-semibold text-[15px] transition-all"
+                style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.15)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.14)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.08)'; }}>
+                See how it works
+              </a>
+            </div>
           </FadeIn>
         </div>
       </section>
