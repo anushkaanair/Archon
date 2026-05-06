@@ -4,6 +4,7 @@ import {
   Play, Save, FolderOpen, Trash2, ZoomIn, ZoomOut, X,
   ChevronDown, Loader2, CheckCircle2, Plus,
   Cpu, Database, GitBranch, Terminal, ArrowRight, Maximize2,
+  Lightbulb, AlertTriangle, Sparkles, Zap,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -251,6 +252,132 @@ function NodeCard({ node, selected, onSelect, onDragStart, onPortMouseDown, onPo
   );
 }
 
+/* ─── Smart Tips ────────────────────────────────────────────────────────── */
+interface Tip { icon: string; text: string; level: 'info' | 'warn' | 'great'; }
+
+function getNodeTips(node: PipelineNode): Tip[] {
+  const tips: Tip[] = [];
+  const cfg = node.config;
+
+  if (node.type === 'llm') {
+    const model = String(cfg.model || '');
+    const temp  = Number(cfg.temperature ?? 0.7);
+    const tok   = Number(cfg.max_tokens  ?? 1024);
+
+    if (model.includes('gpt-4o') && !model.includes('mini'))
+      tips.push({ icon: '💸', text: 'GPT-4o is powerful but pricey — $5/M input tokens. Consider gpt-4o-mini for drafts.', level: 'warn' });
+    if (model.includes('gpt-4o-mini'))
+      tips.push({ icon: '💰', text: 'Smart pick! GPT-4o-mini costs 15× less than GPT-4o with ~90% of the quality.', level: 'great' });
+    if (model.includes('claude-haiku') || model.includes('haiku'))
+      tips.push({ icon: '⚡', text: 'Haiku is blazing fast (200 tok/s) and ultra-cheap. Perfect for real-time apps!', level: 'great' });
+    if (model.includes('claude-sonnet'))
+      tips.push({ icon: '✨', text: 'Great choice! Sonnet hits the sweet spot — strong reasoning at reasonable cost.', level: 'great' });
+    if (model.includes('claude-opus'))
+      tips.push({ icon: '🧠', text: 'Opus = maximum intelligence. Costly at ~$15/M — reserve for complex reasoning.', level: 'warn' });
+    if (model.includes('deepseek'))
+      tips.push({ icon: '🔥', text: 'Oh wow, DeepSeek R1! Near-GPT-4 quality at fraction of the cost. Great call!', level: 'great' });
+    if (model.includes('llama'))
+      tips.push({ icon: '🦙', text: 'Open-source champion! Run locally for zero API cost + full data privacy.', level: 'great' });
+    if (model.includes('gemini'))
+      tips.push({ icon: '♊', text: 'Gemini Flash has a massive 1M context window — ideal for huge documents.', level: 'info' });
+
+    if (temp > 0.85)
+      tips.push({ icon: '🎲', text: `Temperature ${temp} is high → creative but unpredictable. Use <0.3 for factual tasks.`, level: 'warn' });
+    if (temp < 0.2)
+      tips.push({ icon: '🎯', text: `Low temperature (${temp}) → very consistent. Great for structured outputs & JSON.`, level: 'info' });
+    if (tok > 3000)
+      tips.push({ icon: '📏', text: `Max tokens ${tok} = higher cost per call. Only use if you need long responses.`, level: 'warn' });
+    if (tok <= 512)
+      tips.push({ icon: '✂️', text: `${tok} max tokens is tight — responses will be cut short if too long.`, level: 'warn' });
+  }
+
+  if (node.type === 'retriever') {
+    const strategy = String(cfg.strategy || '');
+    const topK     = Number(cfg.top_k ?? 5);
+    const chunk    = Number(cfg.chunk_size ?? 512);
+
+    if (strategy === 'Hybrid')
+      tips.push({ icon: '🏆', text: 'Hybrid search combines dense vectors + BM25 — consistently best retrieval accuracy!', level: 'great' });
+    if (strategy === 'Dense Vector')
+      tips.push({ icon: '🔢', text: 'Dense vectors excel at semantic similarity. Add BM25 (Hybrid) for keyword matches too.', level: 'info' });
+    if (strategy === 'BM25')
+      tips.push({ icon: '🔤', text: 'BM25 is fast & keyword-exact. Misses paraphrased queries — consider Hybrid.', level: 'info' });
+    if (strategy === 'Cross-Encoder')
+      tips.push({ icon: '🎓', text: 'Cross-encoder = highest precision but slowest. Best as a re-ranking step after dense retrieval.', level: 'info' });
+    if (topK > 10)
+      tips.push({ icon: '⚠️', text: `Top-K ${topK} is high — more context tokens sent to LLM = higher cost + slower. Try 5–7.`, level: 'warn' });
+    if (topK <= 3)
+      tips.push({ icon: '🎯', text: `Top-K ${topK} is very selective. Great for precision, but may miss relevant context.`, level: 'info' });
+    if (chunk < 256)
+      tips.push({ icon: '🧩', text: `Chunk size ${chunk} is small — fine-grained retrieval. Good for Q&A, less for summaries.`, level: 'info' });
+    if (chunk > 1024)
+      tips.push({ icon: '📦', text: `Chunk size ${chunk} is large — more context per chunk. May dilute relevance scores.`, level: 'warn' });
+  }
+
+  if (node.type === 'router') {
+    const strategy = String(cfg.strategy || '');
+    if (strategy === 'Intent-based')
+      tips.push({ icon: '🧠', text: 'Intent routing uses an LLM classifier — smart but adds latency. Great for complex flows.', level: 'info' });
+    if (strategy === 'Score-based')
+      tips.push({ icon: '📊', text: 'Score-based routing is fast & deterministic. Perfect for confidence threshold decisions.', level: 'great' });
+    if (strategy === 'Round-robin')
+      tips.push({ icon: '🔄', text: 'Round-robin distributes load evenly — useful for A/B testing different model configs.', level: 'info' });
+    tips.push({ icon: '💡', text: 'Routers save cost! Route simple queries to cheap models, complex ones to powerful models.', level: 'great' });
+  }
+
+  if (node.type === 'input') {
+    tips.push({ icon: '📥', text: 'The Input node is your pipeline\'s entry point. Connect its output to LLM prompt or Retriever query ports.', level: 'info' });
+    tips.push({ icon: '💡', text: 'Tip: Add a Retriever between Input → LLM to build a RAG pipeline that grounds answers in your docs.', level: 'info' });
+  }
+
+  if (node.type === 'output') {
+    const format = String(cfg.format || 'Text');
+    if (format === 'JSON')
+      tips.push({ icon: '📋', text: 'JSON output — make sure your LLM system prompt instructs it to respond in valid JSON.', level: 'info' });
+    if (format === 'Markdown')
+      tips.push({ icon: '✍️', text: 'Markdown output is great for chat UIs. Pair with a renderer like react-markdown.', level: 'info' });
+    tips.push({ icon: '🏁', text: 'Output node captures the final result. Connect from your last LLM or Router node.', level: 'info' });
+  }
+
+  return tips.slice(0, 3); // max 3 tips
+}
+
+function SmartTips({ node }: { node: PipelineNode }) {
+  const tips = getNodeTips(node);
+  if (tips.length === 0) return null;
+
+  const levelStyle: Record<string, { bg: string; border: string; icon: React.ReactNode }> = {
+    great: { bg: 'rgba(5,150,105,0.05)',  border: 'rgba(5,150,105,0.2)',  icon: <Sparkles className="w-3 h-3 text-[#059669]" /> },
+    warn:  { bg: 'rgba(217,119,6,0.05)',  border: 'rgba(217,119,6,0.2)',  icon: <AlertTriangle className="w-3 h-3 text-[#D97706]" /> },
+    info:  { bg: 'rgba(91,0,232,0.04)',   border: 'rgba(91,0,232,0.14)',  icon: <Lightbulb className="w-3 h-3 text-[#5B00E8]" /> },
+  };
+
+  return (
+    <div className="px-4 pb-4 space-y-2.5">
+      <div className="flex items-center gap-1.5 pt-1">
+        <Zap className="w-3 h-3 text-[#5B00E8]" />
+        <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#9CA3AF]">Smart Tips</p>
+      </div>
+      <AnimatePresence mode="popLayout">
+        {tips.map((tip, i) => {
+          const style = levelStyle[tip.level];
+          return (
+            <motion.div key={tip.text}
+              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ delay: i * 0.06, duration: 0.2 }}
+              className="rounded-xl px-3 py-2.5 flex gap-2.5 items-start"
+              style={{ background: style.bg, border: `1px solid ${style.border}` }}>
+              <span className="text-[13px] flex-shrink-0 leading-none mt-0.5">{tip.icon}</span>
+              <p className="text-[11px] leading-relaxed text-[#374151]">{tip.text}</p>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 /* ─── Config panel ──────────────────────────────────────────────────────── */
 function ConfigPanel({ node, onUpdate, onClose, onDelete }: {
   node: PipelineNode; onUpdate: (key: string, value: string | number) => void;
@@ -362,8 +489,11 @@ function ConfigPanel({ node, onUpdate, onClose, onDelete }: {
         )}
       </div>
 
+      {/* Smart Tips */}
+      <SmartTips node={node} />
+
       {/* Delete */}
-      <div className="px-4 py-3" style={{ borderTop: '1.5px solid rgba(91,0,232,0.08)' }}>
+      <div className="px-4 py-3 mt-auto" style={{ borderTop: '1.5px solid rgba(91,0,232,0.08)' }}>
         <button onClick={onDelete}
           className="w-full h-9 rounded-xl text-[12px] font-semibold flex items-center justify-center gap-2 transition-all"
           style={{ background: 'rgba(239,68,68,0.05)', border: '1.5px solid rgba(239,68,68,0.15)', color: '#EF4444' }}
@@ -428,6 +558,51 @@ function RunModal({ onRun, onClose }: { onRun: (prompt: string) => void; onClose
   );
 }
 
+/* ─── Keyboard help modal ───────────────────────────────────────────────── */
+function KeyboardHelpModal({ onClose }: { onClose: () => void }) {
+  const shortcuts = [
+    { key: 'Delete / Backspace', desc: 'Remove selected node' },
+    { key: 'Scroll wheel',       desc: 'Zoom in / out' },
+    { key: 'Drag canvas',        desc: 'Pan the viewport' },
+    { key: 'Drag node',          desc: 'Move node' },
+    { key: '● drag → ○',        desc: 'Draw edge between ports' },
+    { key: 'Dbl-click edge',     desc: 'Delete that edge' },
+    { key: 'Esc',                desc: 'Deselect node' },
+    { key: '?',                  desc: 'Toggle this help' },
+  ];
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50"
+      style={{ background: 'rgba(13,13,26,0.45)', backdropFilter: 'blur(6px)' }}
+      onClick={onClose}>
+      <motion.div initial={{ scale: 0.94, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.94, opacity: 0 }}
+        className="rounded-2xl p-6 w-80"
+        style={{ background: 'white', border: '1.5px solid rgba(91,0,232,0.15)', boxShadow: '0 24px 64px rgba(91,0,232,0.18)' }}
+        onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[15px] font-bold text-[#0D0D0D]">Keyboard Shortcuts</h3>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:bg-[#F4F2FF] transition-all">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="space-y-2">
+          {shortcuts.map(s => (
+            <div key={s.key} className="flex items-center justify-between py-1.5"
+              style={{ borderBottom: '1px solid rgba(91,0,232,0.06)' }}>
+              <span className="text-[12px] text-[#6B7280]">{s.desc}</span>
+              <kbd className="text-[10px] font-mono px-2 py-0.5 rounded-md"
+                style={{ background: '#F4F2FF', border: '1px solid rgba(91,0,232,0.18)', color: '#5B00E8' }}>
+                {s.key}
+              </kbd>
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-[#9CA3AF] mt-4 text-center">Click anywhere or press ? to close</p>
+      </motion.div>
+    </div>
+  );
+}
+
 /* ─── Main Playground ───────────────────────────────────────────────────── */
 export default function Playground() {
   useAuth();
@@ -438,6 +613,7 @@ export default function Playground() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [zoom, setZoom]             = useState(1);
   const [pan, setPan]               = useState({ x: 0, y: 0 });
+  const [showHelp, setShowHelp]     = useState(false);
 
   const dragging = useRef<{ id: string; ox: number; oy: number; startX: number; startY: number } | null>(null);
   const panning  = useRef<{ startX: number; startY: number; panX: number; panY: number } | null>(null);
@@ -529,11 +705,14 @@ export default function Playground() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && !(e.target as Element).closest('input,textarea,select')) {
+      const inInput = (e.target as Element).closest('input,textarea,select');
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && !inInput) {
         setNodes(prev => prev.filter(n => n.id !== selectedId));
         setEdges(prev => prev.filter(ed => ed.fromNode !== selectedId && ed.toNode !== selectedId));
         setSelectedId(null);
       }
+      if (e.key === 'Escape' && !inInput) { setSelectedId(null); setShowHelp(false); }
+      if (e.key === '?' && !inInput) setShowHelp(v => !v);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -666,6 +845,13 @@ export default function Playground() {
             <Maximize2 className="w-3.5 h-3.5" />
           </button>
         </div>
+
+        {/* Help button */}
+        <button onClick={() => setShowHelp(v => !v)}
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#5B00E8] hover:bg-[#F4F2FF] transition-all"
+          title="Keyboard shortcuts (?)">
+          <span className="text-[13px] font-bold">?</span>
+        </button>
 
         {/* Run */}
         <button
@@ -829,6 +1015,11 @@ export default function Playground() {
       {/* ── Run modal ── */}
       <AnimatePresence>
         {showRunModal && <RunModal onRun={runPipeline} onClose={() => setShowRunModal(false)} />}
+      </AnimatePresence>
+
+      {/* ── Keyboard help modal ── */}
+      <AnimatePresence>
+        {showHelp && <KeyboardHelpModal onClose={() => setShowHelp(false)} />}
       </AnimatePresence>
     </div>
   );
