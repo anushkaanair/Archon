@@ -49,11 +49,19 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const safeJson = async (res: Response) => {
+      const text = await res.text();
+      if (!text || !text.trim()) return null;
+      try { return JSON.parse(text); } catch { return null; }
+    };
     Promise.all([
-      fetch('/v1/dashboard/stats', { headers }).then(r => r.json()),
-      fetch('/v1/blueprints?limit=20', { headers }).then(r => r.json()),
-    ]).then(([s, b]) => { setStats(s); setBps(b.items || []); setLoading(false); })
-      .catch(() => setLoading(false));
+      fetch('/v1/dashboard/stats', { headers }).then(safeJson),
+      fetch('/v1/blueprints?limit=20', { headers }).then(safeJson),
+    ]).then(([s, b]) => {
+      if (s) setStats(s);
+      if (b) setBps(b.items || []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
 
   const costBars  = blueprints.slice(0, 6);
@@ -76,6 +84,7 @@ export default function Analytics() {
     : 0;
 
   return (
+    <div className="p-6 lg:p-8">
     <div className="space-y-8 animate-in">
 
       {/* ── Header ── */}
@@ -273,6 +282,7 @@ export default function Analytics() {
           )}
         </>
       )}
+    </div>
     </div>
   );
 }
