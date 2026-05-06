@@ -277,16 +277,26 @@ function LiveTipsPanel({ prompt }: { prompt: string }) {
 export default function Builder() {
   const { token } = useAuth();
 
-  const [prompt, setPrompt]                     = useState('');
-  const [budget, setBudget]                     = useState(0);
-  const [maxLatency, setMaxLatency]             = useState(3000);
-  const [requestVolume, setRequestVolume]       = useState(10000);
-  const [preferOpenSource, setPreferOpenSource] = useState(false);
-  const [compliance, setCompliance]             = useState<string[]>([]);
-  const [teamSize, setTeamSize]                 = useState('Solo dev');
-  const [region, setRegion]                     = useState('English only');
-  const [deployment, setDeployment]             = useState('Cloud SaaS');
-  const [priority, setPriority]                 = useState<'cost' | 'latency' | 'quality'>('quality');
+  /* ── Restore draft from localStorage ── */
+  const restoreDraft = () => {
+    try {
+      const raw = localStorage.getItem('archon_builder_draft');
+      if (raw) return JSON.parse(raw);
+    } catch { /* ignore */ }
+    return null;
+  };
+  const draft = restoreDraft();
+
+  const [prompt, setPrompt]                     = useState(draft?.prompt ?? '');
+  const [budget, setBudget]                     = useState(draft?.budget ?? 0);
+  const [maxLatency, setMaxLatency]             = useState(draft?.maxLatency ?? 3000);
+  const [requestVolume, setRequestVolume]       = useState(draft?.requestVolume ?? 10000);
+  const [preferOpenSource, setPreferOpenSource] = useState(draft?.preferOpenSource ?? false);
+  const [compliance, setCompliance]             = useState<string[]>(draft?.compliance ?? []);
+  const [teamSize, setTeamSize]                 = useState(draft?.teamSize ?? 'Solo dev');
+  const [region, setRegion]                     = useState(draft?.region ?? 'English only');
+  const [deployment, setDeployment]             = useState(draft?.deployment ?? 'Cloud SaaS');
+  const [priority, setPriority]                 = useState<'cost' | 'latency' | 'quality'>(draft?.priority ?? 'quality');
   const [showConstraints, setShowConstraints]   = useState(false);
 
   const [loading, setLoading]         = useState(false);
@@ -297,6 +307,18 @@ export default function Builder() {
 
   const timerRef     = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
+
+  /* ── Persist draft on every change ── */
+  useEffect(() => {
+    if (result) return; // don't overwrite with post-submit state
+    try {
+      localStorage.setItem('archon_builder_draft', JSON.stringify({
+        prompt, budget, maxLatency, requestVolume, preferOpenSource,
+        compliance, teamSize, region, deployment, priority,
+      }));
+    } catch { /* quota exceeded — ignore */ }
+  }, [prompt, budget, maxLatency, requestVolume, preferOpenSource,
+      compliance, teamSize, region, deployment, priority, result]);
 
   useEffect(() => {
     if (loading) {
@@ -370,7 +392,10 @@ export default function Builder() {
     }
   };
 
-  const resetForm = () => { setResult(null); setError(''); setCurrentStep(0); setPrompt(''); };
+  const resetForm = () => {
+    setResult(null); setError(''); setCurrentStep(0); setPrompt('');
+    try { localStorage.removeItem('archon_builder_draft'); } catch { /* ignore */ }
+  };
 
   /* ── Loading view ── */
   if (loading) {
