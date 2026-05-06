@@ -20,15 +20,17 @@ mermaid.initialize({
     clusterBkg: '#F4F2FF',
     clusterBorder: 'rgba(91,0,232,0.25)',
     nodeTextColor: '#0D0D0D',
-    /* Typography */
+    /* Typography — smaller so nodes stay compact */
     fontFamily: 'Inter, system-ui, sans-serif',
-    fontSize: '13px',
+    fontSize: '11px',
   },
   flowchart: {
     curve: 'basis',
-    useMaxWidth: true,
+    useMaxWidth: false,   // we control width via CSS, not Mermaid
     htmlLabels: true,
-    padding: 20,
+    padding: 10,
+    nodeSpacing: 40,
+    rankSpacing: 50,
   },
 });
 
@@ -84,14 +86,17 @@ export default function MermaidDiagram({ chart }: MermaidDiagramProps) {
 
   return (
     <div
-      ref={ref}
-      className="mermaid-wrap w-full rounded-2xl overflow-x-auto"
+      className="w-full rounded-2xl overflow-x-auto"
       style={{
         background: '#ffffff',
         border: '1.5px solid rgba(91,0,232,0.12)',
-        padding: '28px 24px',
-      }}
-      dangerouslySetInnerHTML={{ __html: svg }}
-    />
+        padding: '24px 20px',
+      }}>
+      <div
+        ref={ref}
+        className="mermaid-wrap flex justify-center"
+        dangerouslySetInnerHTML={{ __html: svg }}
+      />
+    </div>
   );
 }

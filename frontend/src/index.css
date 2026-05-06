@@ -334,12 +334,13 @@
     white-space: nowrap;
   }
 
-  /* Mermaid diagram — force SVG to fill its container width */
+  /* Mermaid diagram — scale down if too wide, never stretch up */
   .mermaid-wrap svg,
   .mermaid-wrap > div > svg {
-    width: 100% !important;
+    display: block;
     max-width: 100% !important;
     height: auto !important;
+    /* Do NOT set width: 100% — that zooms in small diagrams */
   }
 
   /* ─── Typography: tight heading tracking ─── */
