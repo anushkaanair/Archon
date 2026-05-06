@@ -218,6 +218,23 @@ export default function Login() {
           {' '}and{' '}
           <a href="#" style={{ color: '#5B00E8' }} className="hover:underline">Privacy Policy</a>
         </p>
+
+        {/* Feature badges */}
+        <div className="flex flex-wrap justify-center gap-2 mt-5">
+          {[
+            { icon: '⚡', label: 'Blueprint in <5s' },
+            { icon: '🧠', label: '30+ Models scored' },
+            { icon: '🔬', label: 'Visual Playground' },
+            { icon: '📊', label: 'RAGAs evaluation' },
+          ].map(f => (
+            <div key={f.label}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium"
+              style={{ background: 'rgba(91,0,232,0.06)', border: '1px solid rgba(91,0,232,0.12)', color: 'rgba(91,0,232,0.7)' }}>
+              <span>{f.icon}</span>
+              <span>{f.label}</span>
+            </div>
+          ))}
+        </div>
       </motion.div>
     </div>
   );
