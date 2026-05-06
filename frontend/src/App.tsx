@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import BlueprintDetail from './pages/BlueprintDetail';
+import NotFound from './pages/NotFound';
 
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/layout/ProtectedRoute';
@@ -33,6 +34,7 @@ const router = createBrowserRouter([
       },
     ],
   },
+  { path: '*', element: <NotFound /> },               // catch-all 404
 ]);
 
 function App() {
