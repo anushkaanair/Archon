@@ -451,7 +451,7 @@ export default function Builder() {
     const totalP95    = latEst.total_p95_ms ?? 0;
 
     return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 lg:p-8 space-y-5 max-w-5xl">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 lg:p-8 space-y-5 w-full">
 
         {/* Offline demo notice */}
         {offlineDemo && (
@@ -601,11 +601,12 @@ export default function Builder() {
           </Section>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Cost + Latency side-by-side at full width */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
           <Section title="Cost Estimate" icon={DollarSign}>
             {costEst.breakdown?.length > 0
               ? <CostTable breakdown={costEst.breakdown} totalMonthly={totalCost} requestVolume={requestVolume} />
-              : <p className="text-[13px] text-[#9CA3AF] py-4 text-center">No cost data. Add an LLM API key for live pricing.</p>}
+              : <p className="text-[13px] text-[#9CA3AF] py-4 text-center">No cost data — connect the backend for live pricing.</p>}
           </Section>
           <Section title="Latency Estimate" icon={Zap}>
             {latEst.breakdown?.length > 0
@@ -614,26 +615,40 @@ export default function Builder() {
           </Section>
         </div>
 
-        {explanation && (
-          <Section title="Why This Stack?" icon={BookOpen}>
-            <div className="space-y-3">
-              {explanation.split('\n\n').filter(Boolean).map((para: string, i: number) => (
-                <p key={i} className="text-[13px] text-[#374151] leading-[1.8]">{para}</p>
-              ))}
+        {/* Explanation + RAGAs side-by-side */}
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
+          {explanation && (
+            <div className="xl:col-span-3">
+              <Section title="Why This Stack?" icon={BookOpen}>
+                <div className="space-y-3">
+                  {explanation.split('\n\n').filter(Boolean).map((para: string, i: number) => (
+                    <p key={i} className="text-[13px] text-[#374151] leading-[1.8]">{para}</p>
+                  ))}
+                </div>
+              </Section>
             </div>
-          </Section>
-        )}
-
-        <Section title="RAGAs Quality Evaluation" icon={Brain} defaultOpen={false}>
-          <div className="flex items-center gap-10 flex-wrap">
-            <ScoreGauge score={evalScore.composite ?? null} label="Composite" size="lg" />
-            <div className="grid grid-cols-2 gap-4">
-              {[{ label: 'Faithfulness', key: 'faithfulness' }, { label: 'Ans. Relevancy', key: 'answer_relevancy' }, { label: 'Ctx. Precision', key: 'context_precision' }, { label: 'Ctx. Recall', key: 'context_recall' }].map(({ label, key }) => (
-                <ScoreGauge key={key} score={evalScore[key] ?? null} label={label} size="sm" />
-              ))}
-            </div>
+          )}
+          <div className={explanation ? 'xl:col-span-2' : 'xl:col-span-5'}>
+            <Section title="RAGAs Quality Evaluation" icon={Brain} defaultOpen={false}>
+              <div className="flex flex-col items-center gap-6">
+                <ScoreGauge score={evalScore.composite ?? null} label="Composite" size="lg" />
+                <div className="grid grid-cols-2 gap-5 w-full">
+                  {[
+                    { label: 'Faithfulness',    key: 'faithfulness' },
+                    { label: 'Ans. Relevancy',  key: 'answer_relevancy' },
+                    { label: 'Ctx. Precision',  key: 'context_precision' },
+                    { label: 'Ctx. Recall',     key: 'context_recall' },
+                  ].map(({ label, key }) => (
+                    <div key={key} className="flex flex-col items-center gap-1 rounded-xl py-3"
+                      style={{ background: '#F9FAFB', border: '1px solid rgba(91,0,232,0.08)' }}>
+                      <ScoreGauge score={evalScore[key] ?? null} label={label} size="sm" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Section>
           </div>
-        </Section>
+        </div>
 
         {citations.length > 0 && (
           <Section title="Benchmark Citations" icon={ExternalLink} defaultOpen={false} badge={`${citations.length}`}>

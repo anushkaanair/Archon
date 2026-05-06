@@ -122,24 +122,25 @@ export function generateMockBlueprint(promptText: string, requestVolume = 10000)
 
   /* ── Mermaid diagram ── */
   const isRag = detected.some(t => t.task === 'retrieval_augmented_generation');
+  const modelLabel = topModel.model_name.replace(/-/g, '‑'); // use non-breaking hyphen so Mermaid doesn't split
   const architecture_diagram = isRag
-    ? `flowchart LR
-    U([User]) --> API[API Gateway]
-    API --> EMB[Embedding Model\\ntext-embedding-3-small]
-    EMB --> VS[(Vector Store\\nPinecone / pgvector)]
-    VS --> RR[Cross-Encoder\\nReranker]
-    RR --> LLM[${topModel.model_name}\\n${topModel.provider}]
+    ? `flowchart TD
+    U([User Query]) --> API[API Gateway]
+    API --> CACHE[(Semantic Cache)]
+    API --> EMB[Embedding Model]
+    EMB --> VS[(Vector Store)]
+    VS --> RR[Cross-Encoder Reranker]
+    RR --> LLM[${modelLabel}]
     LLM --> OUT([Response + Citations])
-    API --> CACHE[(Semantic Cache\\nRedis)]
-    CACHE -.-> LLM`
-    : `flowchart LR
+    CACHE -.->|cache hit| OUT`
+    : `flowchart TD
     U([User]) --> API[API Gateway]
-    API --> GUARD[Guardrails\\nInput validation]
-    GUARD --> LLM[${topModel.model_name}\\n${topModel.provider}]
-    LLM --> PARSE[Output Parser\\nJSON / Markdown]
-    PARSE --> OUT([Structured Response])
-    API --> CACHE[(Response Cache\\nRedis)]
-    CACHE -.-> OUT`;
+    API --> GUARD[Input Guardrails]
+    GUARD --> LLM[${modelLabel}]
+    LLM --> PARSE[Output Parser]
+    PARSE --> OUT([Response])
+    API --> CACHE[(Response Cache)]
+    CACHE -.->|cache hit| OUT`;
 
   /* ── Explanation ── */
   const taskLabel = primaryTask.replace(/_/g, ' ');

@@ -3,20 +3,33 @@ import mermaid from 'mermaid';
 
 mermaid.initialize({
   startOnLoad: false,
-  theme: 'dark',
+  theme: 'base',
   themeVariables: {
-    background: '#0d0b18',
-    primaryColor: '#534AB7',
-    primaryTextColor: '#ffffff',
-    primaryBorderColor: '#534AB7',
-    lineColor: '#AFA9EC',
-    secondaryColor: '#1a1730',
-    tertiaryColor: '#0d0b18',
-    edgeLabelBackground: '#0d0b18',
-    nodeTextColor: '#ffffff',
-    clusterBkg: '#1a1730',
+    /* Canvas */
+    background: '#ffffff',
+    /* Nodes */
+    primaryColor: '#EDE9FF',
+    primaryTextColor: '#0D0D0D',
+    primaryBorderColor: '#5B00E8',
+    /* Edges */
+    lineColor: '#7C3AED',
+    edgeLabelBackground: '#F4F2FF',
+    /* Secondary / cluster */
+    secondaryColor: '#F4F2FF',
+    tertiaryColor: '#F9FAFB',
+    clusterBkg: '#F4F2FF',
+    clusterBorder: 'rgba(91,0,232,0.25)',
+    nodeTextColor: '#0D0D0D',
+    /* Typography */
+    fontFamily: 'Inter, system-ui, sans-serif',
+    fontSize: '13px',
   },
-  flowchart: { curve: 'basis', useMaxWidth: false },
+  flowchart: {
+    curve: 'basis',
+    useMaxWidth: true,
+    htmlLabels: true,
+    padding: 20,
+  },
 });
 
 interface MermaidDiagramProps {
@@ -33,11 +46,12 @@ export default function MermaidDiagram({ chart }: MermaidDiagramProps) {
 
   useEffect(() => {
     if (!chart) return;
+    setSvg('');
+    setError('');
     const render = async () => {
       try {
         const { svg } = await mermaid.render(id, chart);
         setSvg(svg);
-        setError('');
       } catch (e) {
         setError('Diagram rendering failed.');
         console.error(e);
@@ -48,7 +62,7 @@ export default function MermaidDiagram({ chart }: MermaidDiagramProps) {
 
   if (error) {
     return (
-      <div className="rounded-xl p-4 text-[13px]"
+      <div className="rounded-2xl p-4 text-[13px]"
         style={{ background: 'rgba(217,119,6,0.06)', border: '1.5px solid rgba(217,119,6,0.2)', color: '#D97706' }}>
         <p className="font-semibold mb-2">⚠️ Diagram rendering failed</p>
         <pre className="text-[10px] text-[#9CA3AF] overflow-auto whitespace-pre-wrap leading-relaxed font-mono">{chart}</pre>
@@ -58,10 +72,11 @@ export default function MermaidDiagram({ chart }: MermaidDiagramProps) {
 
   if (!svg) {
     return (
-      <div className="flex items-center justify-center h-40 text-[13px] text-[#9CA3AF]">
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-6 h-6 rounded-full border-2 border-[#5B00E8] border-t-transparent animate-spin" />
-          Rendering diagram…
+      <div className="flex items-center justify-center h-48 text-[13px] text-[#9CA3AF]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin"
+            style={{ borderColor: 'rgba(91,0,232,0.15)', borderTopColor: '#5B00E8' }} />
+          <span>Rendering diagram…</span>
         </div>
       </div>
     );
@@ -70,8 +85,12 @@ export default function MermaidDiagram({ chart }: MermaidDiagramProps) {
   return (
     <div
       ref={ref}
-      className="w-full overflow-auto rounded-xl p-5"
-      style={{ background: '#0F0E17', border: '1.5px solid rgba(91,0,232,0.15)' }}
+      className="mermaid-wrap w-full rounded-2xl overflow-x-auto"
+      style={{
+        background: '#ffffff',
+        border: '1.5px solid rgba(91,0,232,0.12)',
+        padding: '28px 24px',
+      }}
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );
