@@ -82,11 +82,11 @@ const NODE_DEFS: Record<NodeType, {
 };
 
 /* ─── Canvas constants ──────────────────────────────────────────────────── */
-const NODE_W    = 228;
-const NODE_H    = 100;
+const NODE_W    = 236;
+const NODE_H    = 120;
 const GRID      = 20;
 const PORT_R    = 6;
-const PORT_HIT  = 12;
+const PORT_HIT  = 14;
 
 const snap = (v: number) => Math.round(v / GRID) * GRID;
 
@@ -105,7 +105,7 @@ function portPos(node: PipelineNode, portId: string, side: 'left' | 'right') {
   const list  = side === 'left' ? def.ports.in : def.ports.out;
   const idx   = list.indexOf(portId);
   const count = list.length;
-  const py    = NODE_H / 2 + (idx - (count - 1) / 2) * 24;
+  const py    = NODE_H / 2 + (idx - (count - 1) / 2) * 28;
   return { x: node.x + (side === 'left' ? 0 : NODE_W), y: node.y + py };
 }
 
@@ -153,7 +153,7 @@ function NodeCard({ node, selected, onSelect, onDragStart, onPortMouseDown, onPo
       </clipPath>
       {/* Clip path for content text */}
       <clipPath id={`textclip-${node.id}`}>
-        <rect x={12} y={36} width={NODE_W - 24} height={NODE_H - 40} />
+        <rect x={12} y={38} width={NODE_W - 24} height={NODE_H - 48} />
       </clipPath>
 
       {/* Card background */}
@@ -189,7 +189,7 @@ function NodeCard({ node, selected, onSelect, onDragStart, onPortMouseDown, onPo
 
       {/* Main value — clipped so it can't overflow the card */}
       <text clipPath={`url(#textclip-${node.id})`}
-        x={14} y={70} fill="#1E293B" fontSize={13} fontWeight={600}
+        x={14} y={82} fill="#1E293B" fontSize={13} fontWeight={600}
         fontFamily="Inter, system-ui, sans-serif">
         {subtitle}
       </text>
@@ -211,7 +211,7 @@ function NodeCard({ node, selected, onSelect, onDragStart, onPortMouseDown, onPo
       {/* ── Input ports (left) ── */}
       {def.ports.in.map((port, i) => {
         const count = def.ports.in.length;
-        const py = NODE_H / 2 + (i - (count - 1) / 2) * 24;
+        const py = NODE_H / 2 + (i - (count - 1) / 2) * 28;
         return (
           <g key={port}
             onMouseUp={e => { e.stopPropagation(); onPortMouseUp(port, 'left'); }}
@@ -233,7 +233,7 @@ function NodeCard({ node, selected, onSelect, onDragStart, onPortMouseDown, onPo
       {/* ── Output ports (right) ── */}
       {def.ports.out.map((port, i) => {
         const count = def.ports.out.length;
-        const py = NODE_H / 2 + (i - (count - 1) / 2) * 24;
+        const py = NODE_H / 2 + (i - (count - 1) / 2) * 28;
         return (
           <g key={port}
             onMouseDown={e => { e.stopPropagation(); onPortMouseDown(port, 'right', e); }}

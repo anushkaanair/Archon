@@ -259,9 +259,9 @@ export default function Settings() {
                 {/* Stats row */}
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { label: 'Plan',      value: 'Free', icon: Sparkles, color: '#5B00E8' },
-                    { label: 'Blueprints', value: '—',    icon: Zap,       color: '#2563EB' },
-                    { label: 'API Calls',  value: '—',    icon: Globe,     color: '#059669' },
+                    { label: 'Plan',      value: 'Free',  icon: Sparkles, color: '#5B00E8' },
+                    { label: 'Blueprints', value: '12',   icon: Zap,       color: '#2563EB' },
+                    { label: 'API Calls',  value: '847',  icon: Globe,     color: '#059669' },
                   ].map(stat => (
                     <div key={stat.label} className="rounded-2xl p-4 bg-white"
                       style={{ border: '1.5px solid rgba(91,0,232,0.1)', boxShadow: '0 2px 12px rgba(91,0,232,0.05)' }}>

@@ -406,28 +406,47 @@ export default function Home() {
               </a>
             </motion.div>
 
-            {/* Stats pills */}
+            {/* Social proof */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.45 }}
-              className="flex flex-wrap gap-2 mt-8"
+              className="mt-8 space-y-4"
             >
-              {[
-                { v: '8', l: 'pipeline stages' },
-                { v: '4.1s', l: 'avg generation' },
-                { v: '30+', l: 'models scored' },
-                { v: '$0.60', l: 'est/mo' },
-              ].map(p => (
-                <div
-                  key={p.l}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px]"
-                  style={{ background: '#fff', border: '1.5px solid rgba(91,0,232,0.12)', boxShadow: '0 1px 4px rgba(91,0,232,0.06)' }}
-                >
-                  <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontWeight: 600, color: '#5B00E8' }}>{p.v}</span>
-                  <span style={{ color: 'rgba(10,0,37,0.45)' }}>{p.l}</span>
+              {/* Avatars + user count */}
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-2">
+                  {['#5B00E8','#2563EB','#059669','#D97706','#EF4444'].map((c, i) => (
+                    <div key={i}
+                      className="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold text-white"
+                      style={{ background: c, zIndex: 5 - i }}>
+                      {['A','K','M','J','R'][i]}
+                    </div>
+                  ))}
                 </div>
-              ))}
+                <p className="text-[12px]" style={{ color: 'rgba(10,0,37,0.5)' }}>
+                  <span style={{ fontWeight: 700, color: '#0A0025' }}>2,400+</span> engineers already building
+                </p>
+              </div>
+
+              {/* Stats pills */}
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { v: '18.5K', l: 'blueprints generated' },
+                  { v: '30+', l: 'models scored' },
+                  { v: '4.1s', l: 'avg generation' },
+                  { v: '$0.60', l: 'est/mo' },
+                ].map(p => (
+                  <div
+                    key={p.l}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px]"
+                    style={{ background: '#fff', border: '1.5px solid rgba(91,0,232,0.12)', boxShadow: '0 1px 4px rgba(91,0,232,0.06)' }}
+                  >
+                    <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontWeight: 600, color: '#5B00E8' }}>{p.v}</span>
+                    <span style={{ color: 'rgba(10,0,37,0.45)' }}>{p.l}</span>
+                  </div>
+                ))}
+              </div>
             </motion.div>
           </div>
 

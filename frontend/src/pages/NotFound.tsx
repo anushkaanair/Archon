@@ -19,8 +19,8 @@ export default function NotFound() {
             404
           </div>
           <motion.div
-            animate={{ rotate: [0, -8, 8, -4, 4, 0] }}
-            transition={{ duration: 1.4, delay: 0.4, ease: 'easeInOut' }}
+            animate={{ y: [0, -6, 0] }}
+            transition={{ duration: 3, delay: 0.5, repeat: Infinity, ease: 'easeInOut' }}
             className="absolute inset-0 flex items-center justify-center">
             <div className="w-20 h-20 rounded-3xl flex items-center justify-center"
               style={{ background: 'white', border: '2px solid rgba(91,0,232,0.15)', boxShadow: '0 12px 40px rgba(91,0,232,0.14)' }}>
@@ -73,12 +73,10 @@ export default function NotFound() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
           className="mt-12 flex justify-center gap-2">
-          {[0, 1, 2].map(i => (
-            <motion.div key={i}
-              animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.8, 0.3] }}
-              transition={{ duration: 1.6, delay: i * 0.3, repeat: Infinity, ease: 'easeInOut' }}
-              className="w-2 h-2 rounded-full"
-              style={{ background: '#5B00E8' }} />
+          {[0.5, 1, 0.5].map((op, i) => (
+            <div key={i}
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ background: '#5B00E8', opacity: op }} />
           ))}
         </motion.div>
       </div>

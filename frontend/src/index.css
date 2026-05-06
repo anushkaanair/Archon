@@ -32,6 +32,12 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  #root {
+    overflow-x: hidden;
+    min-height: 100vh;
   }
 
   ::selection { background: rgba(91,0,232,0.25); color: #fff; }
@@ -335,4 +341,27 @@
     max-width: 100% !important;
     height: auto !important;
   }
+
+  /* ─── Typography: tight heading tracking ─── */
+  /* Apply to any extrabold/black heading for optical tightening */
+  .tracking-heading { letter-spacing: -0.03em; }
+  .tracking-display { letter-spacing: -0.04em; }
+
+  /* ─── Card subtle depth ─── */
+  /* White app cards get a faint depth shadow by default */
+  .card-app {
+    background: #FDFCFF;
+    border: 1.5px solid rgba(91,0,232,0.1);
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(91,0,232,0.05);
+    transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+  }
+  .card-app:hover {
+    border-color: rgba(91,0,232,0.2);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 8px 32px rgba(91,0,232,0.1);
+    transform: translateY(-1px);
+  }
+
+  /* ─── Mobile overflow guard ─── */
+  .overflow-x-safe { overflow-x: hidden; max-width: 100vw; }
 }
