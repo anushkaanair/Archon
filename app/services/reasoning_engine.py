@@ -132,8 +132,24 @@ Write a clear, structured explanation (3-5 paragraphs).
 async def _call_llm(prompt: str, settings: Any) -> str:
     """Call the LLM provider for explanation generation.
 
-    Tries Anthropic (Claude) first, falls back to OpenAI.
+    Priority: Google Gemini → Anthropic Claude → OpenAI GPT-4o → fallback.
+    Google is first because it has a generous free tier (1M tokens/day).
     """
+    # Try Google Gemini (free tier: 15 RPM, 1M tokens/day)
+    if settings.google_api_key:
+        try:
+            import google.generativeai as genai
+
+            genai.configure(api_key=settings.google_api_key)
+            model = genai.GenerativeModel("gemini-2.0-flash")
+            response = await model.generate_content_async(
+                prompt,
+                generation_config=genai.types.GenerationConfig(max_output_tokens=2000),
+            )
+            return response.text
+        except Exception:
+            pass  # Fall through to Anthropic
+
     # Try Anthropic
     if settings.anthropic_api_key:
         try:
@@ -141,7 +157,7 @@ async def _call_llm(prompt: str, settings: Any) -> str:
 
             client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key, timeout=15.0)
             response = await client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model="claude-haiku-4-20250514",
                 max_tokens=2000,
                 messages=[{"role": "user", "content": prompt}],
             )
@@ -156,7 +172,7 @@ async def _call_llm(prompt: str, settings: Any) -> str:
 
             client = AsyncOpenAI(api_key=settings.openai_api_key, timeout=15.0)
             response = await client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=2000,
             )
