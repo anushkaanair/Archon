@@ -27,15 +27,11 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     debug: bool = False
 
-    # ── Database (SQLite + aiosqlite) ──────────────────────────
+    # ── Database (PostgreSQL in prod, SQLite for local dev) ───────
     database_url: str = "sqlite+aiosqlite:///./archon.db"
 
     # ── Redis ────────────────────────────────────────────────────
     redis_url: str = "redis://localhost:6379/0"
-
-    # ── Qdrant ───────────────────────────────────────────────────
-    qdrant_url: str = "http://localhost:6333"
-    qdrant_collection: str = "archon_knowledge_base"
 
     # ── Celery ───────────────────────────────────────────────────
     celery_broker_url: str = "redis://localhost:6379/1"
@@ -49,7 +45,7 @@ class Settings(BaseSettings):
     # ── LLM Providers ────────────────────────────────────────────
     openai_api_key: str = ""
     anthropic_api_key: str = ""
-    google_api_key: str = ""
+    google_api_key: str = ""  # used for both Gemini LLM and text-embedding-004
 
     # ── Auth ─────────────────────────────────────────────────────
     api_key_hash_secret: str = "change-me-in-production"
@@ -69,10 +65,6 @@ class Settings(BaseSettings):
 
     # ── Model Registry Cache ─────────────────────────────────────
     model_registry_cache_ttl: int = 3600  # 1 hour in seconds
-
-    # ── ML Models ────────────────────────────────────────────────
-    embedding_model: str = "all-MiniLM-L6-v2"
-    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
     # ── Chunking ─────────────────────────────────────────────────
     chunk_size: int = 512

@@ -86,9 +86,9 @@ def generate_architecture(
     # Tool nodes (based on detected tasks)
     tool_mapping: dict[str, list[dict]] = {
         "rag": [
-            {"id": "tool_vector_db", "label": "Vector Database", "description": "Qdrant for dense retrieval"},
+            {"id": "tool_vector_db", "label": "Vector Database", "description": "pgvector for dense retrieval"},
             {"id": "tool_bm25", "label": "BM25 Index", "description": "Sparse retrieval for hybrid search"},
-            {"id": "tool_reranker", "label": "CrossEncoder", "description": "Re-ranking for precision"},
+            {"id": "tool_reranker", "label": "RRF Reranker", "description": "Reciprocal Rank Fusion for precision"},
         ],
         "search": [
             {"id": "tool_search_index", "label": "Search Index", "description": "Full-text + semantic search"},
