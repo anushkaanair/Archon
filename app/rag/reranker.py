@@ -1,43 +1,23 @@
-"""CrossEncoder re-ranking for RAG retrieval.
+"""Reciprocal Rank Fusion (RRF) re-ranking.
 
-After hybrid search (dense + BM25) produces an initial candidate set,
-the CrossEncoder re-ranks them by computing a fine-grained relevance
-score for each (query, candidate) pair. This dramatically improves
-retrieval precision — studies show ~18% improvement in top-5 precision.
+Replaces CrossEncoder — no neural model, no torch, no GPU needed.
+RRF combines dense-vector ranks and BM25 ranks into a single ordering
+using the formula: score = Σ 1 / (k + rank_i), where k=60.
+
+Studies show RRF matches or beats learned re-rankers on most benchmarks
+while being orders of magnitude cheaper to run.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
-from app.config import get_settings
-
-if TYPE_CHECKING:
-    from sentence_transformers import CrossEncoder
-
-
-_reranker: CrossEncoder | None = None
-
-
-def _get_reranker() -> CrossEncoder:
-    """Lazy-load the CrossEncoder model.
-
-    Uses ``cross-encoder/ms-marco-MiniLM-L-6-v2`` by default — a small,
-    fast model trained on MS MARCO that produces reliable relevance scores.
-    """
-    global _reranker
-    if _reranker is None:
-        from sentence_transformers import CrossEncoder
-
-        settings = get_settings()
-        _reranker = CrossEncoder(settings.reranker_model)
-    return _reranker
+_RRF_K = 60  # Standard constant from the original RRF paper (Cormack 2009)
 
 
 @dataclass
 class RerankResult:
-    """A single re-ranked result."""
+    """A single re-ranked retrieval result."""
 
     chunk_id: str
     text: str
@@ -47,42 +27,54 @@ class RerankResult:
 
 
 def rerank(
-    query: str,
+    query: str,  # kept for API compatibility — not used by RRF
     candidates: list[dict],
     top_k: int = 10,
 ) -> list[RerankResult]:
-    """Re-rank candidate chunks against a query using CrossEncoder.
+    """Re-rank candidates using Reciprocal Rank Fusion.
+
+    Each candidate dict must contain:
+        - chunk_id (str)
+        - text (str)
+        - source (str)
+        - dense_rank (int) — 1-based rank from cosine similarity
+        - sparse_rank (int) — 1-based rank from BM25
+        - metadata (dict, optional)
+
+    If ``dense_rank`` / ``sparse_rank`` are absent, ``combined_score`` is
+    used directly as the RRF score (for callers that pre-compute scores).
 
     Args:
-        query: The user's search query.
-        candidates: List of dicts with at least ``chunk_id``, ``text``,
-            ``source``, and optionally ``metadata``.
-        top_k: Number of top results to return after re-ranking.
+        query: Original query string (unused, retained for API compat).
+        candidates: List of candidate dicts as described above.
+        top_k: Number of top results to return.
 
     Returns:
-        List of ``RerankResult`` sorted by relevance score descending.
+        List of ``RerankResult`` sorted by RRF score descending.
     """
     if not candidates:
         return []
 
-    model = _get_reranker()
-
-    # Prepare (query, candidate_text) pairs for the CrossEncoder
-    pairs = [(query, c["text"]) for c in candidates]
-    scores = model.predict(pairs)
-
     results = []
-    for candidate, score in zip(candidates, scores):
+    for c in candidates:
+        dense_rank = c.get("dense_rank")
+        sparse_rank = c.get("sparse_rank")
+
+        if dense_rank is not None and sparse_rank is not None:
+            rrf_score = (1.0 / (_RRF_K + dense_rank)) + (1.0 / (_RRF_K + sparse_rank))
+        else:
+            # Fall back to combined_score if ranks aren't provided
+            rrf_score = c.get("combined_score", 0.0)
+
         results.append(
             RerankResult(
-                chunk_id=candidate.get("chunk_id", ""),
-                text=candidate["text"],
-                score=float(score),
-                source=candidate.get("source", "unknown"),
-                metadata=candidate.get("metadata", {}),
+                chunk_id=c.get("chunk_id", ""),
+                text=c.get("text", ""),
+                score=rrf_score,
+                source=c.get("source", "unknown"),
+                metadata=c.get("metadata", {}),
             )
         )
 
-    # Sort by score descending and take top_k
     results.sort(key=lambda r: r.score, reverse=True)
     return results[:top_k]

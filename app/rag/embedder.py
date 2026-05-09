@@ -1,67 +1,69 @@
-"""Sentence-transformer embedding wrapper.
+"""Google text-embedding-004 embeddings client.
 
-Provides a lazy-loaded singleton for encoding text into dense vectors.
-Uses ``all-MiniLM-L6-v2`` by default (384-dimensional, fast, production-grade).
+Replaces local sentence-transformers — no torch, no model download.
+Free tier: 1,500 RPM, 768-dimensional output.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import asyncio
 
 import numpy as np
 
-from app.config import get_settings
 
-if TYPE_CHECKING:
-    from sentence_transformers import SentenceTransformer
-
-
-_model: SentenceTransformer | None = None
+_EMBEDDING_MODEL = "models/text-embedding-004"
+_DIM = 768
 
 
-def _get_model() -> SentenceTransformer:
-    """Lazy-load the sentence transformer model.
+def _embed_sync(texts: list[str], task_type: str) -> np.ndarray:
+    """Synchronous embedding call (wraps the Google genai SDK).
 
-    This avoids loading the model at import time, which would slow down
-    startup and waste memory if the model isn't needed (e.g. health checks).
+    google.generativeai is not async-native, so this function is always
+    called via ``asyncio.to_thread`` to avoid blocking the event loop.
     """
-    global _model
-    if _model is None:
-        from sentence_transformers import SentenceTransformer
+    import google.generativeai as genai
 
-        settings = get_settings()
-        _model = SentenceTransformer(settings.embedding_model)
-    return _model
+    from app.config import get_settings
+
+    settings = get_settings()
+    genai.configure(api_key=settings.google_api_key)
+
+    result = genai.embed_content(
+        model=_EMBEDDING_MODEL,
+        content=texts,
+        task_type=task_type,
+    )
+
+    # embed_content returns {"embedding": [...]} for a single string or
+    # {"embedding": [[...], [...]]} for a list — normalise to 2-D.
+    raw = result["embedding"]
+    if raw and not isinstance(raw[0], list):
+        raw = [raw]  # single text — wrap to 2-D
+
+    vecs = np.array(raw, dtype=np.float32)
+    norms = np.linalg.norm(vecs, axis=1, keepdims=True)
+    return vecs / np.where(norms == 0, 1, norms)
 
 
-def embed_texts(texts: list[str]) -> np.ndarray:
-    """Encode a list of texts into dense vectors.
-
-    Args:
-        texts: List of strings to embed.
+async def embed_texts(texts: list[str]) -> np.ndarray:
+    """Embed a batch of document texts for indexing.
 
     Returns:
-        numpy array of shape ``(len(texts), dim)`` where ``dim`` is the
-        model's embedding dimension (384 for MiniLM-L6-v2).
+        Float32 array of shape ``(len(texts), 768)``, L2-normalised.
     """
-    model = _get_model()
-    return model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
+    return await asyncio.to_thread(_embed_sync, texts, "retrieval_document")
 
 
-def embed_query(text: str) -> list[float]:
-    """Encode a single query string into a dense vector.
+async def embed_query(text: str) -> list[float]:
+    """Embed a single search query.
 
-    Returns a plain Python list (not numpy) for JSON serialisation and
-    Qdrant compatibility.
+    Returns:
+        L2-normalised float list of length 768.
     """
-    vectors = embed_texts([text])
-    return vectors[0].tolist()
+    arr = await asyncio.to_thread(_embed_sync, [text], "retrieval_query")
+    return arr[0].tolist()
 
 
 def get_embedding_dim() -> int:
-    """Return the dimensionality of the embedding model.
-
-    Useful for setting up the Qdrant collection schema.
-    """
-    model = _get_model()
-    return model.get_sentence_embedding_dimension()
+    """Return the embedding dimension (768 for text-embedding-004)."""
+    return _DIM

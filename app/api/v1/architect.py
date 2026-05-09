@@ -86,7 +86,7 @@ async def architect_endpoint(
     redis_client = getattr(request.app.state, "redis", None)
 
     # ── Stage 1: Semantic analysis ────────────────────────────
-    # Run in a thread pool — SentenceTransformer.encode() is CPU-bound and
+    # Run in a thread pool — keyword matching is CPU-bound and
     # would block the event loop if called directly in an async handler.
     try:
         import asyncio

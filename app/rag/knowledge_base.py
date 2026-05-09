@@ -1,197 +1,190 @@
-"""Knowledge base management — ingest and query.
+"""Knowledge base management — ingest and query via pgvector.
 
-Handles document ingestion (chunk → embed → upsert to Qdrant + BM25)
-and the full hybrid retrieval pipeline (dense + BM25 → merge → CrossEncoder).
+Handles document ingestion (chunk → embed → store in PostgreSQL + BM25)
+and the full hybrid retrieval pipeline (dense pgvector + BM25 → RRF merge).
+
+No Qdrant, no torch, no model downloads. Requires PostgreSQL with pgvector.
 """
 
 from __future__ import annotations
 
+import math
 import uuid
 from typing import Any
 
-from app.config import get_settings
 from app.rag.bm25_index import BM25Index
-from app.rag.chunker import Chunk, chunk_text
-from app.rag.embedder import embed_query, embed_texts, get_embedding_dim
+from app.rag.chunker import chunk_text
+from app.rag.embedder import embed_query, embed_texts
 from app.rag.reranker import RerankResult, rerank
 
-# Module-level BM25 index (loaded into memory once)
+# Module-level BM25 index (in-memory, rebuilt from DB on cold start if needed)
 _bm25_index = BM25Index()
 
 
 async def ingest_document(
-    qdrant_client: Any,
+    db: Any,  # SQLAlchemy AsyncSession
     text: str,
     source: str,
     metadata: dict | None = None,
 ) -> int:
     """Ingest a document into the knowledge base.
 
-    Pipeline: text → chunk → embed → upsert to Qdrant + BM25.
+    Pipeline: text → chunk → embed (Google) → store in knowledge_chunks +
+    BM25 index.
 
     Args:
-        qdrant_client: Async Qdrant client.
+        db: SQLAlchemy async session.
         text: Full document text.
-        source: Source identifier (URL, filename).
+        source: Source identifier (URL, filename, etc.).
         metadata: Optional extra metadata to attach to each chunk.
 
     Returns:
-        Number of chunks ingested.
+        Number of chunks ingested, or 0 on error.
     """
-    settings = get_settings()
-    chunks = chunk_text(text, source=source)
+    try:
+        from app.db.models.knowledge_chunk import KnowledgeChunk
+    except Exception:
+        return 0  # pgvector not available
 
+    chunks = chunk_text(text, source=source)
     if not chunks:
         return 0
 
-    # Generate embeddings for all chunks
     texts = [c.text for c in chunks]
-    embeddings = embed_texts(texts)
+    embeddings = await embed_texts(texts)  # shape (n, 768)
 
-    # Generate chunk IDs
-    chunk_ids = [str(uuid.uuid4()) for _ in chunks]
+    chunk_ids: list[str] = []
+    for chunk, emb in zip(chunks, embeddings):
+        cid = str(uuid.uuid4())
+        chunk_ids.append(cid)
 
-    # Upsert to Qdrant
-    from qdrant_client.models import PointStruct
-
-    points = [
-        PointStruct(
-            id=cid,
-            vector=emb.tolist(),
-            payload={
-                **chunk.to_dict(),
-                **(metadata or {}),
-            },
+        row = KnowledgeChunk(
+            chunk_id=cid,
+            text=chunk.text,
+            source=source,
+            chunk_metadata={**(chunk.to_dict() if hasattr(chunk, "to_dict") else {}), **(metadata or {})},
+            embedding=emb.tolist(),
         )
-        for cid, emb, chunk in zip(chunk_ids, embeddings, chunks)
-    ]
+        db.add(row)
 
-    await qdrant_client.upsert(
-        collection_name=settings.qdrant_collection,
-        points=points,
-    )
+    await db.flush()
 
-    # Add to BM25 index
+    # Update the in-memory BM25 index
     _bm25_index.add_documents(chunk_ids, texts)
 
     return len(chunks)
 
 
 async def hybrid_search(
-    qdrant_client: Any,
+    db: Any,  # SQLAlchemy AsyncSession
     query: str,
     top_k: int = 10,
     dense_weight: float = 0.6,
     sparse_weight: float = 0.4,
 ) -> list[RerankResult]:
-    """Execute a hybrid search: dense (Qdrant) + sparse (BM25) → re-rank.
-
-    This is the core retrieval function. It MUST always be called before
-    any LLM reasoning — per project rules, retrieval is never skipped.
+    """Execute hybrid search: dense (pgvector cosine) + sparse (BM25) → RRF.
 
     Args:
-        qdrant_client: Async Qdrant client.
+        db: SQLAlchemy async session.
         query: Natural-language search query.
-        top_k: Number of final results after re-ranking.
-        dense_weight: Weight for dense search scores (0.0–1.0).
-        sparse_weight: Weight for BM25 scores (0.0–1.0).
+        top_k: Number of final results after RRF re-ranking.
+        dense_weight: Unused (kept for API compat). RRF weights ranks equally.
+        sparse_weight: Unused (kept for API compat).
 
     Returns:
-        List of ``RerankResult`` after CrossEncoder re-ranking,
-        sorted by relevance score descending.
+        List of ``RerankResult`` sorted by RRF score descending.
     """
-    settings = get_settings()
-
-    # ── 1. Dense search via Qdrant ──────────────────────────────
-    query_vector = embed_query(query)
-
-    dense_results = await qdrant_client.search(
-        collection_name=settings.qdrant_collection,
-        query_vector=query_vector,
-        limit=top_k * 3,  # Over-fetch for merging
-    )
-
-    dense_candidates: dict[str, dict] = {}
-    for hit in dense_results:
-        cid = str(hit.id)
-        dense_candidates[cid] = {
-            "chunk_id": cid,
-            "text": hit.payload.get("text", ""),
-            "source": hit.payload.get("source", "unknown"),
-            "metadata": hit.payload,
-            "dense_score": hit.score,
-            "sparse_score": 0.0,
-        }
-
-    # ── 2. Sparse search via BM25 ──────────────────────────────
-    bm25_results = _bm25_index.search(query, top_k=top_k * 3)
-
-    for cid, score in bm25_results:
-        if cid in dense_candidates:
-            dense_candidates[cid]["sparse_score"] = score
-        else:
-            # BM25-only hit — we don't have the full payload, so mark it
-            dense_candidates[cid] = {
-                "chunk_id": cid,
-                "text": "",  # Will need to be fetched if needed
-                "source": "unknown",
-                "metadata": {},
-                "dense_score": 0.0,
-                "sparse_score": score,
-            }
-
-    # ── 3. Merge scores ─────────────────────────────────────────
-    # Normalise scores to [0, 1] range before weighting
-    if dense_candidates:
-        max_dense = max(c["dense_score"] for c in dense_candidates.values()) or 1.0
-        max_sparse = max(c["sparse_score"] for c in dense_candidates.values()) or 1.0
-
-        for c in dense_candidates.values():
-            c["combined_score"] = (
-                dense_weight * (c["dense_score"] / max_dense)
-                + sparse_weight * (c["sparse_score"] / max_sparse)
-            )
-
-    # Sort by combined score and take top candidates for re-ranking
-    sorted_candidates = sorted(
-        dense_candidates.values(),
-        key=lambda c: c.get("combined_score", 0),
-        reverse=True,
-    )[: top_k * 2]
-
-    # Filter out candidates with empty text (BM25-only hits without payload)
-    valid_candidates = [c for c in sorted_candidates if c["text"]]
-
-    # ── 4. CrossEncoder re-rank ─────────────────────────────────
-    if not valid_candidates:
+    try:
+        from app.db.models.knowledge_chunk import KnowledgeChunk, _HAVE_PGVECTOR
+        from sqlalchemy import select, text as sa_text
+    except Exception:
         return []
 
-    reranked = rerank(query, valid_candidates, top_k=top_k)
+    candidates: dict[str, dict] = {}
 
+    # ── 1. Dense search via pgvector ────────────────────────────
+    if _HAVE_PGVECTOR:
+        try:
+            query_vec = await embed_query(query)
+            # Use pgvector's <=> (cosine distance) operator via raw SQL
+            # (SQLAlchemy ORM doesn't auto-generate this without extra setup)
+            stmt = sa_text(
+                """
+                SELECT chunk_id, text, source, metadata,
+                       1 - (embedding <=> CAST(:vec AS vector)) AS cosine_sim
+                FROM knowledge_chunks
+                ORDER BY embedding <=> CAST(:vec AS vector)
+                LIMIT :limit
+                """
+            ).bindparams(vec=str(query_vec), limit=top_k * 3)
+
+            result = await db.execute(stmt)
+            rows = result.fetchall()
+
+            for rank, row in enumerate(rows, start=1):
+                cid = row.chunk_id
+                candidates[cid] = {
+                    "chunk_id": cid,
+                    "text": row.text,
+                    "source": row.source,
+                    "metadata": row.metadata or {},
+                    "dense_rank": rank,
+                    "sparse_rank": top_k * 3 + 1,  # default worst rank
+                }
+        except Exception:
+            pass  # pgvector not installed/enabled — BM25 only
+
+    # ── 2. Sparse search via BM25 ────────────────────────────────
+    bm25_results = _bm25_index.search(query, top_k=top_k * 3)
+
+    for rank, (cid, _score) in enumerate(bm25_results, start=1):
+        if cid in candidates:
+            candidates[cid]["sparse_rank"] = rank
+        else:
+            # BM25-only hit — fetch text from DB
+            try:
+                stmt = (
+                    select(
+                        KnowledgeChunk.chunk_id,
+                        KnowledgeChunk.text,
+                        KnowledgeChunk.source,
+                        KnowledgeChunk.chunk_metadata,
+                    ).where(KnowledgeChunk.chunk_id == cid)
+                )
+                row = (await db.execute(stmt)).one_or_none()
+                if row:
+                    candidates[cid] = {
+                        "chunk_id": row.chunk_id,
+                        "text": row.text,
+                        "source": row.source,
+                        "metadata": row.chunk_metadata or {},
+                        "dense_rank": top_k * 3 + 1,
+                        "sparse_rank": rank,
+                    }
+            except Exception:
+                pass
+
+    if not candidates:
+        return []
+
+    # ── 3. RRF re-rank ───────────────────────────────────────────
+    valid = [c for c in candidates.values() if c.get("text")]
+    reranked = rerank(query, valid, top_k=top_k)
     return reranked
 
 
 def get_retrieval_confidence(results: list[RerankResult]) -> float:
-    """Compute a confidence score for the retrieval quality.
+    """Compute a simple confidence score from RRF result scores.
 
-    Uses the top result's CrossEncoder score normalised to [0, 1].
-    A score below 0.3 indicates weak retrieval and should trigger a
-    low-confidence flag.
-
-    Args:
-        results: Re-ranked results from ``hybrid_search``.
+    RRF scores are small positive floats (e.g. 0.015 for rank 1 with k=60).
+    We normalise against the theoretical maximum (rank 1 from both lists).
 
     Returns:
-        Confidence score between 0.0 and 1.0.
+        Confidence score in [0.0, 1.0].
     """
     if not results:
         return 0.0
 
-    # CrossEncoder scores are typically in [-10, 10] range for ms-marco
-    top_score = results[0].score
-
-    # Sigmoid normalisation to [0, 1]
-    import math
-    confidence = 1.0 / (1.0 + math.exp(-top_score))
-
+    max_rrf = (1.0 / (60 + 1)) + (1.0 / (60 + 1))  # both lists rank 1
+    confidence = min(results[0].score / max_rrf, 1.0)
     return round(confidence, 4)

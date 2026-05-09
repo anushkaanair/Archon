@@ -1,7 +1,7 @@
 """FastAPI dependency injection.
 
 Provides reusable dependencies for database sessions, Redis clients,
-Qdrant connections, and authentication.
+and authentication.
 
 Authentication supports two token types (tried in order):
   1. JWT issued by /auth/{provider}/callback (OAuth flow)
@@ -125,9 +125,3 @@ def get_redis() -> Any:
     return None
 
 
-def get_qdrant() -> Any:
-    """Return the Qdrant client attached during app lifespan.
-
-    The actual client is set on ``app.state.qdrant`` during startup.
-    """
-    return None

@@ -1,8 +1,7 @@
 """FastAPI application factory.
 
 Creates the Archon app with all middleware, routes, and lifespan handlers.
-Uses the lifespan pattern for startup/shutdown of database, Redis, and
-Qdrant connections.
+Uses the lifespan pattern for startup/shutdown of database and Redis.
 """
 
 from __future__ import annotations
@@ -104,13 +103,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Manage application lifecycle — startup and shutdown.
 
     On startup:
+    - Initialise database tables (SQLAlchemy create_all)
     - Initialise Redis connection pool
-    - Initialise Qdrant client
     - Initialise Langfuse tracer
 
     On shutdown:
     - Close Redis connection
-    - Close Qdrant connection
     - Flush Langfuse traces
     """
     settings = get_settings()
@@ -120,6 +118,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from app.db.session import engine
     from app.db.base import Base
     import app.db.models as _models  # noqa: F401 — register all models with metadata
+
+    # Enable pgvector extension on PostgreSQL (no-op on SQLite)
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(
+                __import__("sqlalchemy").text("CREATE EXTENSION IF NOT EXISTS vector")
+            )
+        print("[startup] pgvector extension enabled.")
+    except Exception:
+        pass  # SQLite or pgvector not available — knowledge base will degrade gracefully
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
@@ -138,20 +147,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception:
         app.state.redis = None
 
-    # Qdrant
-    try:
-        from qdrant_client import AsyncQdrantClient
-        qdrant_client = AsyncQdrantClient(url=settings.qdrant_url, timeout=2.0)
-        # Verify connection
-        await qdrant_client.get_collections()
-        app.state.qdrant = qdrant_client
-    except Exception:
-        # Fallback to in-memory Qdrant client
-        from qdrant_client import AsyncQdrantClient
-        print("Falling back to in-memory Qdrant")
-        app.state.qdrant = AsyncQdrantClient(location=":memory:")
-
-
     # Langfuse
     try:
         from app.observability.langfuse_tracer import get_tracer
@@ -164,9 +159,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # ── Shutdown ─────────────────────────────────────────────────
     if redis_client:
         await redis_client.close()
-
-    if hasattr(app.state, "qdrant") and app.state.qdrant:
-        await app.state.qdrant.close()
 
     if hasattr(app.state, "tracer") and app.state.tracer:
         app.state.tracer.flush()

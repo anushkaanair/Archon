@@ -30,13 +30,11 @@ dependencies = [
     # Celery
     "celery[redis]>=5.4.0",
 
-    # Vector DB
-    "qdrant-client>=1.12.0",
+    # Vector search (pgvector SQLAlchemy integration)
+    "pgvector>=0.3.0",
 
-    # ML / Embeddings / Reranking
-    "sentence-transformers>=3.3.0",
+    # Embeddings / Reranking (lightweight — no torch, no model downloads)
     "rank-bm25>=0.2.2",
-    "torch>=2.5.0",
     "numpy>=1.26.0",
 
     # RAGAs evaluation

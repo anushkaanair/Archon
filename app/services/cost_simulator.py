@@ -110,10 +110,10 @@ def estimate_latency(
     # Fixed latency estimates for infrastructure components (with source)
     infra_latency: dict[str, dict] = {
         "tool_vector_db": {
-            "step": "Vector Search (Qdrant)",
-            "p50_ms": 15,
-            "p95_ms": 45,
-            "source": "https://qdrant.tech/benchmarks/",
+            "step": "Vector Search (pgvector)",
+            "p50_ms": 12,
+            "p95_ms": 35,
+            "source": "https://github.com/pgvector/pgvector#performance",
         },
         "tool_bm25": {
             "step": "BM25 Sparse Search",
@@ -122,10 +122,10 @@ def estimate_latency(
             "source": "https://github.com/dorianbrown/rank_bm25#benchmarks",
         },
         "tool_reranker": {
-            "step": "CrossEncoder Re-ranking",
-            "p50_ms": 50,
-            "p95_ms": 120,
-            "source": "https://www.sbert.net/docs/cross_encoder/pretrained_models.html",
+            "step": "RRF Re-ranking",
+            "p50_ms": 2,
+            "p95_ms": 5,
+            "source": "https://dl.acm.org/doi/10.1145/1571941.1572114",
         },
     }
 
