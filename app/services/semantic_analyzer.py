@@ -108,6 +108,60 @@ async def _get_task_embeddings() -> tuple[np.ndarray, list[dict[str, str]]]:
     return _task_embeddings, _task_labels  # type: ignore[return-value]
 
 
+_KEYWORD_FALLBACK: dict[str, list[str]] = {
+    "rag":            ["rag", "retrieval", "document", "pdf", "knowledge base", "knowledge-base", "vector", "embedding", "citation", "citations"],
+    "image_generation": ["image gen", "text-to-image", "diffusion", "midjourney", "dall-e", "dalle", "stable diffusion", "image generation"],
+    "speech":          ["speech", "voice", "audio", "transcription", "whisper", "tts", "stt", "speech-to-text", "text-to-speech"],
+    "classification":  ["classify", "classification", "sentiment", "moderation", "category", "categorise", "categorize", "spam"],
+    "code_generation": ["code", "coding", "programming", "developer", "github", "review", "debug", "sql", "function calling"],
+    "data_analysis":   ["analyse", "analyze", "analysis", "report", "dashboard", "metric", "kpi", "data analysis", "business intelligence", "bi "],
+    "chatbot":         ["chat", "chatbot", "assistant", "support", "customer", "helpdesk", "conversational", "faq"],
+    "recommendation":  ["recommend", "recommendation", "personalised", "personalized", "suggestions", "collaborative filtering"],
+    "translation":     ["translate", "translation", "multilingual", "localisation", "localization", "language"],
+    "summarisation":   ["summarise", "summarize", "summary", "abstract", "tldr", "condense", "key points"],
+    "search":          ["search", "lookup", "find", "discovery", "retrieval engine"],
+    "agent":           ["agent", "workflow", "orchestrate", "orchestration", "tool use", "multi-step", "autonomous"],
+    "fine_tuning":     ["fine-tune", "fine tuning", "finetune", "domain adaptation", "custom training", "lora"],
+}
+
+
+def _keyword_detect(input_text: str, max_tasks: int) -> list[DetectedTask]:
+    """Deterministic keyword-based task detection used when the embedder is
+    unavailable (no LLM API key, network failure, quota exhausted, etc.).
+
+    Confidence is the share of matched keywords divided by the keyword-set
+    size, clamped to [0.30, 0.92] so the score stays in a believable band
+    rather than colliding with the embedding model's natural range.
+    """
+    lower = input_text.lower()
+    matches: list[DetectedTask] = []
+    for task_def in TASK_DEFINITIONS:
+        kws = _KEYWORD_FALLBACK.get(task_def["task"], [])
+        hits = sum(1 for kw in kws if kw in lower)
+        if hits > 0:
+            score = min(0.92, 0.30 + 0.15 * hits)
+            matches.append(
+                DetectedTask(
+                    task=task_def["task"],
+                    confidence=round(score, 4),
+                    description=f"Detected: {task_def['name']} (keyword match: {hits})",
+                )
+            )
+
+    # Always return at least one task — default to chatbot if nothing matched.
+    if not matches:
+        matches.append(
+            DetectedTask(
+                task="chatbot",
+                confidence=0.35,
+                description="Detected: Conversational AI (default fallback)",
+            )
+        )
+
+    matches.sort(key=lambda t: t.confidence, reverse=True)
+    return matches[:max_tasks]
+
+
 async def detect_tasks(
     input_text: str,
     threshold: float = 0.3,
@@ -115,38 +169,30 @@ async def detect_tasks(
 ) -> list[DetectedTask]:
     """Detect AI tasks from natural-language input using cosine similarity.
 
-    Embeds the input text and computes cosine similarity against pre-defined
-    task anchor embeddings. Tasks with similarity above the threshold are
-    returned, sorted by confidence descending.
-
-    Args:
-        input_text: The user's product idea or description.
-        threshold: Minimum cosine similarity to consider a task detected.
-        max_tasks: Maximum number of tasks to return.
-
-    Returns:
-        List of ``DetectedTask`` objects sorted by confidence.
+    Tries the embedding path first; falls back to deterministic keyword
+    matching if the embedder fails (e.g. no Google API key configured).
     """
-    task_embs, task_defs = await _get_task_embeddings()
+    try:
+        task_embs, task_defs = await _get_task_embeddings()
+        input_arr = await embed_texts([input_text])
+        input_emb = input_arr[0]
+        similarities = np.dot(task_embs, input_emb)
 
-    # Embed the input
-    input_arr = await embed_texts([input_text])
-    input_emb = input_arr[0]
-
-    # Compute cosine similarities (embeddings are already normalised)
-    similarities = np.dot(task_embs, input_emb)
-
-    detected: list[DetectedTask] = []
-    for sim, task_def in zip(similarities, task_defs):
-        if sim >= threshold:
-            detected.append(
-                DetectedTask(
-                    task=task_def["task"],
-                    confidence=round(float(sim), 4),
-                    description=f"Detected: {task_def['name']} (similarity: {sim:.3f})",
+        detected: list[DetectedTask] = []
+        for sim, task_def in zip(similarities, task_defs):
+            if sim >= threshold:
+                detected.append(
+                    DetectedTask(
+                        task=task_def["task"],
+                        confidence=round(float(sim), 4),
+                        description=f"Detected: {task_def['name']} (similarity: {sim:.3f})",
+                    )
                 )
-            )
+        detected.sort(key=lambda t: t.confidence, reverse=True)
 
-    # Sort by confidence descending, cap at max_tasks
-    detected.sort(key=lambda t: t.confidence, reverse=True)
-    return detected[:max_tasks]
+        # If embedding returns nothing useful, fall back to keywords.
+        return detected[:max_tasks] if detected else _keyword_detect(input_text, max_tasks)
+
+    except Exception:
+        # No API key / quota / network — graceful keyword fallback.
+        return _keyword_detect(input_text, max_tasks)
