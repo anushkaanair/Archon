@@ -167,17 +167,23 @@ async def architect_endpoint(
     }
 
     # ── Stage 6: RAGAs evaluation ─────────────────────────────
+    # Time-boxed: ragas can call external LLMs that may stall on a missing
+    # API key. Cap at 8 s so a stuck evaluator never holds the whole request.
+    import asyncio as _asyncio
     try:
         answer_text = (
             f"Recommended {len(recommendations)} models for tasks: "
             + ", ".join(d["task"] if isinstance(d, dict) else d.task for d in task_dicts)
         )
-        eval_result = await evaluate_recommendation(
-            question=body.input_text,
-            answer=answer_text,
-            contexts=[],
+        eval_result = await _asyncio.wait_for(
+            evaluate_recommendation(
+                question=body.input_text,
+                answer=answer_text,
+                contexts=[],
+            ),
+            timeout=4.0,
         )
-    except Exception:
+    except (Exception, _asyncio.TimeoutError):
         eval_result = EvalScoreDetail(
             faithfulness=None,
             answer_relevancy=None,
@@ -188,16 +194,20 @@ async def architect_endpoint(
         )
 
     # ── Stage 7: LLM explanation ──────────────────────────────
+    # Same defence — the LLM call may hang without a key. 10 s ceiling.
     try:
-        explanation_data = await generate_explanation(
-            input_text=body.input_text,
-            detected_tasks=task_dicts,
-            recommendations=[r.model_dump() for r in recommendations],
-            architecture_json=arch_json,
-            cost_estimate=cost_estimate,
-            latency_estimate=latency_estimate,
+        explanation_data = await _asyncio.wait_for(
+            generate_explanation(
+                input_text=body.input_text,
+                detected_tasks=task_dicts,
+                recommendations=[r.model_dump() for r in recommendations],
+                architecture_json=arch_json,
+                cost_estimate=cost_estimate,
+                latency_estimate=latency_estimate,
+            ),
+            timeout=5.0,
         )
-    except Exception:
+    except (Exception, _asyncio.TimeoutError):
         explanation_data = {
             "explanation": (
                 "This architecture was designed based on the detected AI tasks and "
@@ -235,8 +245,18 @@ async def architect_endpoint(
 
         query.status = "completed"
         await db.flush()
-    except Exception:
-        pass  # Blueprint persist failed — response still returns best-effort data
+    except Exception as persist_err:
+        # Log the failure so it surfaces in APM — the response still returns
+        # best-effort data, but the blueprint won't be retrievable by ID.
+        # A returned blueprint_id that doesn't exist in the DB is a data loss bug;
+        # operators need to see this in logs immediately.
+        import logging as _logging
+        _logging.getLogger(__name__).error(
+            "Blueprint persist failed — blueprint_id %s will not be queryable: %s",
+            blueprint_id,
+            persist_err,
+            exc_info=True,
+        )
 
     # Log via tracer (no-op if Langfuse not configured)
     try:
