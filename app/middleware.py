@@ -57,17 +57,23 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """Check rate limit before forwarding the request."""
-        # Skip rate limiting if Redis is not available (dev mode)
-        if self.redis is None:
+        # Resolve Redis client at request-time from app state.
+        # RateLimitMiddleware is added before Redis connects, so self.redis is
+        # always None at init time — we must read from app.state.redis instead.
+        redis = getattr(request.app.state, "redis", None) or self.redis
+        if redis is None:
             return await call_next(request)
 
         # Determine the rate limit key and max requests
         user = getattr(request.state, "user", None)
         if user:
             key = f"ratelimit:user:{user.id}"
+            # Use getattr — User model may not have a tier column yet.
+            # Defaults to "free" so the rate limiter never throws AttributeError.
+            tier = getattr(user, "tier", "free") or "free"
             max_requests = (
                 self.settings.rate_limit_pro
-                if user.tier == "pro"
+                if tier == "pro"
                 else self.settings.rate_limit_free
             )
         else:
@@ -80,14 +86,26 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         now = time.time()
         window_start = now - window
 
-        pipe = self.redis.pipeline()
-        pipe.zremrangebyscore(key, 0, window_start)
-        pipe.zadd(key, {str(now): now})
-        pipe.zcard(key)
-        pipe.expire(key, window)
-        results = await pipe.execute()
+        # Use a UUID as the sorted-set member so two requests arriving in the
+        # same millisecond never collide and silently drop a count entry.
+        member = str(uuid.uuid4())
 
-        current_count = results[2]
+        try:
+            pipe = redis.pipeline()
+            pipe.zremrangebyscore(key, 0, window_start)
+            pipe.zadd(key, {member: now})
+            pipe.zcard(key)
+            pipe.expire(key, window)
+            results = await pipe.execute()
+            current_count = results[2]
+        except Exception:
+            # Redis pipeline failed mid-request (e.g. connection drop).
+            # Fail open: let the request through rather than returning 500.
+            import logging as _logging
+            _logging.getLogger(__name__).warning(
+                "Rate limiter Redis error — failing open for this request"
+            )
+            return await call_next(request)
 
         if current_count > max_requests:
             retry_after = int(window - (now - window_start))
