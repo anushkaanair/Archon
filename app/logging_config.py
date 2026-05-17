@@ -72,12 +72,41 @@ def configure_logging(level: str = "INFO") -> None:
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
 
-def get_logger(name: str) -> logging.Logger:
-    """Return a named logger (call this at module level).
+class _KwargLogger:
+    """Thin wrapper that lets callers pass kwargs as structured fields.
+
+    Forwards ``log.info("msg", foo=1)`` to ``logger.info("msg", extra={"foo": 1})``
+    so the JSONFormatter picks them up. Without this wrapper, stdlib loggers
+    reject unknown kwargs with ``TypeError: _log() got an unexpected keyword``.
+    """
+
+    __slots__ = ("_logger",)
+
+    def __init__(self, logger: logging.Logger) -> None:
+        self._logger = logger
+
+    def _log(self, level: int, msg: str, *args: Any, **kwargs: Any) -> None:
+        std_keys = {"exc_info", "stack_info", "stacklevel", "extra"}
+        std_kwargs = {k: kwargs.pop(k) for k in list(kwargs) if k in std_keys}
+        if kwargs:
+            std_kwargs["extra"] = {**std_kwargs.get("extra", {}), **kwargs}
+        self._logger.log(level, msg, *args, **std_kwargs)
+
+    def debug(self, msg: str, *a: Any, **kw: Any) -> None: self._log(logging.DEBUG, msg, *a, **kw)
+    def info(self, msg: str, *a: Any, **kw: Any) -> None:  self._log(logging.INFO,  msg, *a, **kw)
+    def warning(self, msg: str, *a: Any, **kw: Any) -> None: self._log(logging.WARNING, msg, *a, **kw)
+    def error(self, msg: str, *a: Any, **kw: Any) -> None: self._log(logging.ERROR, msg, *a, **kw)
+    def critical(self, msg: str, *a: Any, **kw: Any) -> None: self._log(logging.CRITICAL, msg, *a, **kw)
+    # Common aliases
+    warn = warning
+
+
+def get_logger(name: str) -> _KwargLogger:
+    """Return a named logger that accepts arbitrary keyword fields.
 
     Example::
 
         log = get_logger(__name__)
         log.info("Task detected", task="rag", confidence=0.95)
     """
-    return logging.getLogger(name)
+    return _KwargLogger(logging.getLogger(name))

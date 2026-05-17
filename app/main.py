@@ -44,6 +44,23 @@ def _validate_env() -> None:
         if "sqlite" not in settings.database_url:  # only enforce in prod
             errors.append("API_KEY_HASH_SECRET must be set to a strong random value in production")
 
+    if settings.jwt_secret in ("archon-jwt-secret-change-in-production", ""):
+        if "sqlite" not in settings.database_url:  # only enforce in prod
+            errors.append(
+                "JWT_SECRET must be set to a strong random value in production "
+                "(generate one with: python -c \"import secrets; print(secrets.token_hex(32))\")"
+            )
+
+    # SQLite is fine for local development but must NOT be used in production.
+    # It lacks concurrent write support and connection pooling required for a
+    # multi-worker deployment.
+    if "sqlite" in settings.database_url and not settings.debug:
+        errors.append(
+            "SQLite is not suitable for production. "
+            "Set DATABASE_URL to a PostgreSQL connection string, e.g. "
+            "postgresql+asyncpg://user:pass@host:5432/archon"
+        )
+
     if errors:
         for err in errors:
             log.error("Environment validation failed", error=err)
@@ -191,6 +208,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception:
         app.state.tracer = None
 
+    # ── News cache warmer ────────────────────────────────────────
+    # Fetch RSS feeds in the background so the first /v1/news request
+    # is instant rather than waiting 5+ s on cold cache.
+    try:
+        import asyncio as _asyncio
+        from app.api.v1.news import refresh_news
+        _asyncio.create_task(refresh_news())
+        log.info("News cache warmer scheduled")
+    except Exception as exc:
+        log.warning("News cache warmer skipped", error=str(exc))
+
     log.info("Archon ready")
     yield
 
@@ -224,7 +252,17 @@ def create_app() -> FastAPI:
     # ── Middleware (last added = first executed) ──────────────────
     import os
     cors_raw = os.getenv("CORS_ORIGINS", "")
-    cors_origins = [o.strip() for o in cors_raw.split(",") if o.strip()] or ["*"]
+    cors_origins = [o.strip() for o in cors_raw.split(",") if o.strip()]
+
+    if not cors_origins:
+        # Wildcard is only safe in local dev. In production set CORS_ORIGINS
+        # to your actual frontend domain(s), e.g. "https://app.archon.ai".
+        cors_origins = ["*"]
+        if not settings.debug:
+            log.warning(
+                "CORS_ORIGINS not set — allowing all origins. "
+                "Set CORS_ORIGINS=https://your-frontend.com in production."
+            )
 
     app.add_middleware(
         CORSMiddleware,
