@@ -25,6 +25,9 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true",
     )
+    # ── Profile preferences (editable via PATCH /v1/user/me) ──
+    bio: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    timezone: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     # ── Relationships ────────────────────────────────────────────
     api_keys = relationship("ApiKey", back_populates="user", lazy="selectin")
