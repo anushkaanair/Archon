@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Key, Shield, Copy, Check, Eye, EyeOff, User, Mail, LogOut,
   Plus, Database, ChevronDown, CheckCircle2, Sliders, Lock,
-  Sparkles, RefreshCw, AlertTriangle, Globe, Zap, Edit3,
-  Clock, TrendingUp, Award,
+  RefreshCw, AlertTriangle, Globe, Zap, Edit3,
+  Clock, TrendingUp, Award, Menu, X, Info,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -107,14 +107,35 @@ const section = {
 
 /* ─── Main ────────────────────────────────────────────────────────────────── */
 export default function Settings() {
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<TabId>('profile');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  /* profile form */
-  const [profileName, setProfileName]   = useState(user?.name || '');
-  const [profileEmail, setProfileEmail] = useState(user?.email || '');
+  /* ── Live stats from the API ── */
+  const [dashStats, setDashStats]     = useState<any>(null);
+  const [recentBps, setRecentBps]     = useState<any[]>([]);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    const headers = { Authorization: `Bearer ${token || ''}` };
+    const safeJson = async (res: Response) => {
+      const t = await res.text();
+      if (!t?.trim()) return null;
+      try { return JSON.parse(t); } catch { return null; }
+    };
+    Promise.all([
+      fetch('/v1/dashboard/stats', { headers }).then(safeJson).catch(() => null),
+      fetch('/v1/blueprints?limit=5', { headers }).then(safeJson).catch(() => null),
+    ]).then(([stats, bps]) => {
+      if (stats) setDashStats(stats);
+      if (bps?.items) setRecentBps(bps.items);
+      setStatsLoading(false);
+    });
+  }, [token]);
+
+  /* ── Profile form ── */
   const [profileBio, setProfileBio]     = useState('');
   const [profileTz, setProfileTz]       = useState('UTC+0 — London');
   const [profileSaved, setProfileSaved] = useState(false);
@@ -122,23 +143,63 @@ export default function Settings() {
 
   const saveProfile = async () => {
     setProfileSaving(true);
-    // TODO: wire to PATCH /users/me once backend endpoint exists
-    await new Promise(r => setTimeout(r, 800));
-    setProfileSaving(false);
-    setProfileSaved(true);
-    setTimeout(() => setProfileSaved(false), 2500);
+    try {
+      // Real backend persistence — PATCH /v1/user/me writes bio + timezone.
+      const res = await fetch('/v1/user/me', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token || 'arch_test_key_dev'}`,
+        },
+        body: JSON.stringify({ bio: profileBio, timezone: profileTz }),
+      });
+      if (res.ok) {
+        // Mirror to localStorage so the UI rehydrates instantly on next mount.
+        localStorage.setItem('archon_profile_bio', profileBio);
+        localStorage.setItem('archon_profile_tz', profileTz);
+      }
+    } catch {
+      // Backend offline — still mirror to localStorage so the user's edit survives.
+      localStorage.setItem('archon_profile_bio', profileBio);
+      localStorage.setItem('archon_profile_tz', profileTz);
+    } finally {
+      setProfileSaving(false);
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 2500);
+    }
   };
 
-  /* preferences */
-  const [latency, setLatency]         = useState(1500);
-  const [ragas, setRagas]             = useState(70);
-  const [prefSaved, setPrefSaved]     = useState(false);
+  useEffect(() => {
+    // Hydrate from backend first; fall back to localStorage if offline.
+    const headers = { Authorization: `Bearer ${token || 'arch_test_key_dev'}` };
+    fetch('/v1/user/me', { credentials: 'include', headers })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (d) {
+          if (d.bio != null)      setProfileBio(d.bio);
+          if (d.timezone != null) setProfileTz(d.timezone);
+        } else {
+          setProfileBio(localStorage.getItem('archon_profile_bio') || '');
+          setProfileTz(localStorage.getItem('archon_profile_tz') || 'UTC+0 — London');
+        }
+      })
+      .catch(() => {
+        setProfileBio(localStorage.getItem('archon_profile_bio') || '');
+        setProfileTz(localStorage.getItem('archon_profile_tz') || 'UTC+0 — London');
+      });
+  }, [token]);
 
-  /* api key */
-  const [showKey, setShowKey]         = useState(false);
-  const [keyCopied, setKeyCopied]     = useState(false);
-  const devKey     = 'arch_dev_' + '•'.repeat(14) + 'j3q2';
-  const devKeyFull = 'arch_dev_hk9xm2pq7r8sj3q2';
+  /* ── Preferences ── */
+  const [latency, setLatency]     = useState(1500);
+  const [ragas, setRagas]         = useState(70);
+  const [prefSaved, setPrefSaved] = useState(false);
+
+  /* ── API key ── */
+  const [showKey, setShowKey]     = useState(false);
+  const [keyCopied, setKeyCopied] = useState(false);
+  const devKeyFull = 'arch_test_key_dev';
+  const devKeyMask = 'arch_test' + '•'.repeat(10);
 
   const copyKey = () => {
     navigator.clipboard.writeText(devKeyFull);
@@ -146,7 +207,7 @@ export default function Settings() {
     setTimeout(() => setKeyCopied(false), 2200);
   };
 
-  /* model request */
+  /* ── Model request ── */
   const [modelName,    setModelName]    = useState('');
   const [provider,     setProvider]     = useState('Anthropic');
   const [modelType,    setModelType]    = useState('Chat/Completion');
@@ -170,15 +231,77 @@ export default function Settings() {
     setTimeout(() => setSubmitStatus('success'), 700);
   };
 
-  const providerLabel = user?.provider === 'google' ? 'Google' : user?.provider === 'github' ? 'GitHub' : 'Local';
-  const providerColor = user?.provider === 'google' ? '#EA4335' : user?.provider === 'github' ? '#6F42C1' : '#059669';
-  const initial = (user?.name || user?.email || 'U')[0].toUpperCase();
+  const providerLabel = user?.provider === 'google' ? 'Google' : user?.provider === 'github' ? 'GitHub' : 'Dev';
+  // Strip any parenthetical suffix (e.g. legacy "(offline)" tag in stale localStorage)
+  // so the profile card always shows a clean display name.
+  const rawName     = (user?.name || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+  const displayName = rawName || user?.email?.split('@')[0] || 'User';
+  const initial     = (displayName || user?.email || 'U')[0].toUpperCase();
+
+  // Real stats with fallback to '—' while loading
+  const totalBlueprints = statsLoading ? null : (dashStats?.total_blueprints ?? 0);
+  const avgScore        = statsLoading ? null : dashStats?.avg_eval_score;
+  const totalCost       = statsLoading ? null : dashStats?.total_estimated_monthly_cost_usd;
+  const modelsEval      = statsLoading ? null : (dashStats?.models_evaluated ?? 0);
+
+  const navigateTab = (id: TabId) => { setActiveTab(id); setMobileNavOpen(false); };
 
   return (
-    <div className="flex h-full min-h-0 overflow-hidden">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
 
-      {/* ── Left navigation ── */}
-      <div className="w-56 flex-shrink-0 flex flex-col py-6 px-3"
+      {/* ── Mobile top bar (visible < md) ── */}
+      <div className="flex md:hidden items-center justify-between px-4 py-3 flex-shrink-0"
+        style={{ background: 'white', borderBottom: '1.5px solid rgba(91,0,232,0.08)', boxShadow: '0 2px 8px rgba(91,0,232,0.04)' }}>
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[13px] font-bold text-white"
+            style={{ background: 'linear-gradient(135deg, #5B00E8, #7C3AED)' }}>{initial}</div>
+          <span className="text-[14px] font-bold text-[#0D0D0D]">
+            {TABS.find(t => t.id === activeTab)?.label ?? 'Settings'}
+          </span>
+        </div>
+        <button onClick={() => setMobileNavOpen(v => !v)}
+          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+          style={{ background: mobileNavOpen ? 'rgba(91,0,232,0.08)' : 'transparent', color: '#5B00E8' }}>
+          {mobileNavOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+        </button>
+      </div>
+
+      {/* ── Mobile nav overlay ── */}
+      <AnimatePresence>
+        {mobileNavOpen && (
+          <motion.div key="mobile-nav"
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
+            className="md:hidden absolute inset-x-0 z-50 px-3 py-3 space-y-1"
+            style={{ top: 56, background: 'white', borderBottom: '1.5px solid rgba(91,0,232,0.1)', boxShadow: '0 8px 24px rgba(91,0,232,0.1)' }}>
+            {TABS.map(tab => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button key={tab.id} onClick={() => navigateTab(tab.id)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all"
+                  style={{ background: isActive ? `${tab.color}0D` : 'transparent', color: isActive ? tab.color : '#64748B' }}>
+                  <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={isActive ? 2 : 1.75} />
+                  <span className="text-[13px] font-medium">{tab.label}</span>
+                </button>
+              );
+            })}
+            <div style={{ borderTop: '1px solid rgba(91,0,232,0.08)', marginTop: 4, paddingTop: 4 }}>
+              <button onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left"
+                style={{ color: '#EF4444' }}>
+                <LogOut className="w-4 h-4" strokeWidth={1.75} />
+                <span className="text-[13px] font-medium">Sign out</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+
+      {/* ── Left navigation (desktop) ── */}
+      <div className="hidden md:flex w-56 flex-shrink-0 flex-col py-6 px-3"
         style={{ background: 'white', borderRight: '1.5px solid rgba(91,0,232,0.08)', boxShadow: '2px 0 12px rgba(91,0,232,0.03)' }}>
 
         {/* Mini profile */}
@@ -234,7 +357,7 @@ export default function Settings() {
       </div>
 
       {/* ── Right content ── */}
-      <div className="flex-1 overflow-y-auto p-8" style={{ background: '#F4F2FF' }}>
+      <div className="flex-1 overflow-y-auto p-4 md:p-8" style={{ background: '#F4F2FF' }}>
         <div className="max-w-2xl mx-auto">
           <AnimatePresence mode="wait">
 
@@ -246,38 +369,38 @@ export default function Settings() {
                   <p className="text-[13px] text-[#6B7280]">Your account information and identity</p>
                 </div>
 
-                {/* Identity card — fixed alignment */}
-                <div className="rounded-2xl bg-white"
+                {/* Identity card — clean layout: banner sits on top, avatar + name on a row entirely below */}
+                <div className="rounded-2xl bg-white overflow-hidden"
                   style={{ border: '1.5px solid rgba(91,0,232,0.12)', boxShadow: '0 4px 24px rgba(91,0,232,0.07)' }}>
-                  {/* Banner */}
-                  <div className="h-24 w-full rounded-t-2xl relative"
+                  {/* Decorative banner — purely visual, no content overlap */}
+                  <div className="h-16 w-full relative"
                     style={{ background: 'linear-gradient(135deg, #5B00E8 0%, #7C3AED 50%, #A78BFA 100%)' }}>
-                    <div className="absolute inset-0 rounded-t-2xl"
-                      style={{ backgroundImage: 'radial-gradient(circle at 15% 50%, rgba(255,255,255,0.18) 0%, transparent 55%), radial-gradient(circle at 85% 20%, rgba(255,255,255,0.12) 0%, transparent 45%)' }} />
-                  </div>
-                  <div className="px-6 pb-5">
-                    {/* Avatar row — sits on the banner border */}
-                    <div className="flex items-end justify-between" style={{ marginTop: -28 }}>
-                      <div className="w-14 h-14 rounded-xl flex items-center justify-center text-[22px] font-black text-white"
-                        style={{ background: 'linear-gradient(135deg, #5B00E8, #7C3AED)', boxShadow: '0 4px 16px rgba(91,0,232,0.5)', border: '3px solid white' }}>
-                        {initial}
-                      </div>
-                      <div className="flex items-center gap-2 pb-1">
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full"
-                          style={{ background: `${providerColor}15`, color: providerColor, border: `1.5px solid ${providerColor}30` }}>
-                          {providerLabel}
-                        </span>
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full"
-                          style={{ background: 'rgba(5,150,105,0.1)', color: '#059669', border: '1.5px solid rgba(5,150,105,0.25)' }}>
-                          Free plan
-                        </span>
-                      </div>
+                    <div className="absolute inset-0"
+                      style={{ backgroundImage: 'radial-gradient(circle at 15% 50%, rgba(255,255,255,0.20) 0%, transparent 55%), radial-gradient(circle at 85% 20%, rgba(255,255,255,0.14) 0%, transparent 45%)' }} />
+                    <div className="absolute top-3.5 right-5 flex items-center gap-2">
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur"
+                        style={{ background: 'rgba(255,255,255,0.24)', color: 'white', border: '1px solid rgba(255,255,255,0.4)' }}>
+                        {providerLabel}
+                      </span>
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur"
+                        style={{ background: 'rgba(255,255,255,0.24)', color: 'white', border: '1px solid rgba(255,255,255,0.4)' }}>
+                        Free plan
+                      </span>
                     </div>
-                    <div className="mt-3">
-                      <h3 className="text-[18px] font-extrabold text-[#0D0D0D] leading-tight">{user?.name || 'User'}</h3>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <Mail className="w-3 h-3 text-[#9CA3AF]" />
-                        <p className="text-[12px] text-[#6B7280]">{user?.email || '—'}</p>
+                  </div>
+                  {/* Body — avatar + identity in a clean row, fully below the banner */}
+                  <div className="px-6 py-6 flex items-center gap-5">
+                    <div className="w-[72px] h-[72px] rounded-2xl flex items-center justify-center text-[28px] font-black text-white flex-shrink-0"
+                      style={{ background: 'linear-gradient(135deg, #5B00E8, #7C3AED)', boxShadow: '0 6px 24px rgba(91,0,232,0.4)' }}>
+                      {initial}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-[22px] font-extrabold text-[#0D0D0D] leading-tight truncate">
+                        {displayName}
+                      </h3>
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <Mail className="w-3.5 h-3.5 text-[#9CA3AF] flex-shrink-0" />
+                        <p className="text-[13px] text-[#6B7280] truncate">{user?.email || '—'}</p>
                       </div>
                     </div>
                   </div>
@@ -286,10 +409,10 @@ export default function Settings() {
                 {/* Stats row */}
                 <div className="grid grid-cols-4 gap-3">
                   {[
-                    { label: 'Blueprints',   value: '12',    icon: Zap,        color: '#5B00E8' },
-                    { label: 'API Calls',    value: '847',   icon: Globe,      color: '#2563EB' },
-                    { label: 'Models Used',  value: '9',     icon: TrendingUp, color: '#059669' },
-                    { label: 'Saved',        value: '4',     icon: Award,      color: '#D97706' },
+                    { label: 'Blueprints',  value: statsLoading ? '…' : String(totalBlueprints ?? 0),                                            icon: Zap,        color: '#5B00E8' },
+                    { label: 'Avg Score',   value: statsLoading ? '…' : avgScore != null ? `${(avgScore * 100).toFixed(0)}%` : '—',               icon: Globe,      color: '#2563EB' },
+                    { label: 'Models Eval', value: statsLoading ? '…' : String(modelsEval ?? 0),                                                  icon: TrendingUp, color: '#059669' },
+                    { label: 'Est. Cost',   value: statsLoading ? '…' : totalCost != null ? `$${Number(totalCost).toFixed(2)}` : '—',             icon: Award,      color: '#D97706' },
                   ].map(stat => (
                     <div key={stat.label} className="rounded-2xl p-4 bg-white text-center"
                       style={{ border: '1.5px solid rgba(91,0,232,0.1)', boxShadow: '0 2px 12px rgba(91,0,232,0.05)' }}>
@@ -308,9 +431,25 @@ export default function Settings() {
                     <p className="text-[12px] font-bold text-[#374151]">Edit Profile</p>
                   </div>
                   <div className="p-5 space-y-4">
+                    {/* OAuth read-only note */}
+                    <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl"
+                      style={{ background: 'rgba(91,0,232,0.04)', border: '1px solid rgba(91,0,232,0.1)' }}>
+                      <Info className="w-3.5 h-3.5 text-[#5B00E8] flex-shrink-0 mt-0.5" strokeWidth={2} />
+                      <p className="text-[11px] text-[#6B7280] leading-relaxed">
+                        <span className="font-semibold text-[#374151]">Name and email</span> come from your {providerLabel} account and cannot be changed here.
+                      </p>
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <TextField label="Display name" value={profileName} onChange={setProfileName} placeholder="Your name" />
-                      <TextField label="Email" value={profileEmail} onChange={setProfileEmail} type="email" placeholder="you@example.com" />
+                      <div>
+                        <FieldLabel>Display name</FieldLabel>
+                        <input readOnly value={user?.name || ''} className={inputCls}
+                          style={{ ...inputStyle, background: 'rgba(91,0,232,0.03)', color: '#9CA3AF', cursor: 'not-allowed', borderColor: 'rgba(91,0,232,0.1)' }} />
+                      </div>
+                      <div>
+                        <FieldLabel>Email</FieldLabel>
+                        <input readOnly value={user?.email || ''} className={inputCls}
+                          style={{ ...inputStyle, background: 'rgba(91,0,232,0.03)', color: '#9CA3AF', cursor: 'not-allowed', borderColor: 'rgba(91,0,232,0.1)' }} />
+                      </div>
                     </div>
                     <div>
                       <FieldLabel>Bio (optional)</FieldLabel>
@@ -346,48 +485,39 @@ export default function Settings() {
                     <p className="text-[12px] font-bold text-[#374151]">Recent Activity</p>
                   </div>
                   <div className="divide-y" style={{ borderColor: 'rgba(91,0,232,0.06)' }}>
-                    {[
-                      { label: 'Blueprint generated', sub: 'Legal Q&A Bot — RAG + citation tracking', time: '2h ago', color: '#5B00E8', icon: Zap },
-                      { label: 'Blueprint generated', sub: 'Fraud Detection pipeline — real-time scoring', time: '1d ago', color: '#059669', icon: Zap },
-                      { label: 'API key accessed',    sub: 'arch_dev_*** from 192.168.x.x', time: '2d ago', color: '#D97706', icon: Key },
-                      { label: 'Blueprint saved',     sub: 'Customer Support Bot — multi-channel AI', time: '3d ago', color: '#2563EB', icon: Award },
-                    ].map((item, i) => {
-                      const Icon = item.icon;
-                      return (
-                        <div key={i} className="flex items-center gap-3 px-5 py-3">
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                            style={{ background: `${item.color}10` }}>
-                            <Icon className="w-3.5 h-3.5" style={{ color: item.color }} strokeWidth={2} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[12px] font-semibold text-[#374151]">{item.label}</p>
-                            <p className="text-[10px] text-[#9CA3AF] truncate">{item.sub}</p>
-                          </div>
-                          <span className="text-[10px] text-[#9CA3AF] flex-shrink-0">{item.time}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Plan upgrade */}
-                <div className="rounded-2xl p-5 relative overflow-hidden"
-                  style={{ background: 'linear-gradient(135deg, #5B00E8 0%, #7C3AED 100%)', boxShadow: '0 8px 32px rgba(91,0,232,0.3)' }}>
-                  <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-20"
-                    style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
-                  <div className="flex items-center justify-between relative">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <Sparkles className="w-4 h-4 text-white/80" />
-                        <p className="text-[11px] font-bold text-white/70 uppercase tracking-wider">Pro Plan</p>
+                    {statsLoading ? (
+                      <div className="px-5 py-6 flex items-center justify-center">
+                        <div className="w-4 h-4 border-2 border-[#5B00E8] border-t-transparent rounded-full animate-spin mr-2" />
+                        <span className="text-[12px] text-[#9CA3AF]">Loading activity…</span>
                       </div>
-                      <p className="text-[16px] font-extrabold text-white">Unlock unlimited blueprints</p>
-                      <p className="text-[11px] text-white/70 mt-0.5">1,000 req/min · priority support · team access</p>
-                    </div>
-                    <button className="flex-shrink-0 h-9 px-5 rounded-xl text-[12px] font-bold text-[#5B00E8] bg-white transition-all hover:scale-105"
-                      style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
-                      Upgrade →
-                    </button>
+                    ) : recentBps.length === 0 ? (
+                      <div className="px-5 py-6 text-center">
+                        <Zap className="w-8 h-8 mx-auto mb-2 text-[#D1C4FE]" strokeWidth={1.5} />
+                        <p className="text-[12px] text-[#9CA3AF]">No blueprints yet — generate your first one!</p>
+                      </div>
+                    ) : (
+                      recentBps.map((bp: any, i: number) => {
+                        const ts = bp.created_at ? new Date(bp.created_at) : null;
+                        const now = Date.now();
+                        const diff = ts ? now - ts.getTime() : 0;
+                        const timeAgo = diff < 3600000 ? `${Math.max(1, Math.floor(diff / 60000))}m ago`
+                          : diff < 86400000 ? `${Math.floor(diff / 3600000)}h ago`
+                          : `${Math.floor(diff / 86400000)}d ago`;
+                        return (
+                          <div key={bp.id ?? i} className="flex items-center gap-3 px-5 py-3">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                              style={{ background: 'rgba(91,0,232,0.08)' }}>
+                              <Zap className="w-3.5 h-3.5 text-[#5B00E8]" strokeWidth={2} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[12px] font-semibold text-[#374151]">Blueprint generated</p>
+                              <p className="text-[10px] text-[#9CA3AF] truncate">{bp.use_case || bp.title || 'Untitled blueprint'}</p>
+                            </div>
+                            <span className="text-[10px] text-[#9CA3AF] flex-shrink-0">{ts ? timeAgo : '—'}</span>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
 
@@ -414,7 +544,7 @@ export default function Settings() {
                     </div>
                     <code className="block text-[13px] tracking-wide break-all mb-4"
                       style={{ fontFamily: "'IBM Plex Mono', monospace", color: showKey ? '#C4A0FF' : '#6B7280' }}>
-                      {showKey ? devKeyFull : devKey}
+                      {showKey ? devKeyFull : devKeyMask}
                     </code>
                     <div className="flex items-center gap-2">
                       <button onClick={() => setShowKey(!showKey)}
@@ -660,6 +790,8 @@ export default function Settings() {
 
           </AnimatePresence>
         </div>
+      </div>
+
       </div>
     </div>
   );
