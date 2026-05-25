@@ -39,9 +39,9 @@ const NODE_DEFS: Record<NodeType, {
     label: 'LLM', color: '#5B00E8', border: 'rgba(91,0,232,0.3)', bg: 'rgba(91,0,232,0.06)', textColor: '#5B00E8',
     icon: ({ className }) => <Cpu className={className} />,
     ports: { in: ['context', 'prompt'], out: ['response'] },
-    defaultConfig: { model: 'claude-sonnet-4', temperature: 0.7, max_tokens: 1024, system_prompt: 'You are a helpful assistant.' },
+    defaultConfig: { model: 'claude-sonnet-4-5', temperature: 0.7, max_tokens: 1024, system_prompt: 'You are a helpful assistant.' },
     configFields: [
-      { key: 'model', label: 'Model', type: 'select', options: ['claude-sonnet-4', 'claude-opus-4', 'claude-haiku-4', 'gpt-4o', 'gpt-4o-mini', 'gemini-2.0-flash', 'deepseek-r1', 'llama-3.3-70b'] },
+      { key: 'model', label: 'Model', type: 'select', options: ['claude-sonnet-4-5', 'claude-opus-4-5', 'claude-haiku-4-5', 'gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gemini-2.5-pro', 'gemini-2.0-flash', 'deepseek-v3', 'llama-3.3-70b'] },
       { key: 'system_prompt', label: 'System prompt', type: 'textarea' },
       { key: 'temperature', label: 'Temperature', type: 'number' },
       { key: 'max_tokens', label: 'Max tokens', type: 'number' },
@@ -92,7 +92,7 @@ const snap = (v: number) => Math.round(v / GRID) * GRID;
 
 function getSubtitle(node: PipelineNode): string {
   const raw =
-    node.type === 'llm'       ? String(node.config.model || 'claude-sonnet-4') :
+    node.type === 'llm'       ? String(node.config.model || 'claude-sonnet-4-5') :
     node.type === 'retriever' ? `${node.config.strategy || 'Hybrid'} · k=${node.config.top_k ?? 5}` :
     node.type === 'router'    ? String(node.config.strategy || 'Intent-based') :
     node.type === 'output'    ? String(node.config.label || 'Output') : 'User input';
@@ -117,7 +117,7 @@ function bezierPath(x1: number, y1: number, x2: number, y2: number) {
 const STARTER_NODES: PipelineNode[] = [
   { id: 'n1', type: 'input',     x: 60,  y: 200, config: { placeholder: 'Enter your query…' }, status: 'idle' },
   { id: 'n2', type: 'retriever', x: 340, y: 140, config: { strategy: 'Hybrid', top_k: 5, chunk_size: 512 }, status: 'idle' },
-  { id: 'n3', type: 'llm',       x: 620, y: 160, config: { model: 'claude-sonnet-4', temperature: 0.7, max_tokens: 1024, system_prompt: 'You are a helpful assistant.' }, status: 'idle' },
+  { id: 'n3', type: 'llm',       x: 620, y: 160, config: { model: 'claude-sonnet-4-5', temperature: 0.7, max_tokens: 1024, system_prompt: 'You are a helpful assistant.' }, status: 'idle' },
   { id: 'n4', type: 'output',    x: 900, y: 210, config: { label: 'Final Output', format: 'Text' }, status: 'idle' },
 ];
 const STARTER_EDGES: Edge[] = [
@@ -265,30 +265,30 @@ function getNodeTips(node: PipelineNode): Tip[] {
     const tok   = Number(cfg.max_tokens  ?? 1024);
 
     if (model.includes('gpt-4o') && !model.includes('mini'))
-      tips.push({ icon: '💸', text: 'GPT-4o is powerful but pricey — $5/M input tokens. Consider gpt-4o-mini for drafts.', level: 'warn' });
+      tips.push({ icon: 'COST', text: 'GPT-4o is powerful but priced at $5 per million input tokens. Consider gpt-4o-mini for drafts.', level: 'warn' });
     if (model.includes('gpt-4o-mini'))
-      tips.push({ icon: '💰', text: 'Smart pick! GPT-4o-mini costs 15× less than GPT-4o with ~90% of the quality.', level: 'great' });
+      tips.push({ icon: 'VALUE', text: 'GPT-4o-mini costs 15x less than GPT-4o with ~90% of the quality.', level: 'great' });
     if (model.includes('claude-haiku') || model.includes('haiku'))
-      tips.push({ icon: '⚡', text: 'Haiku is blazing fast (200 tok/s) and ultra-cheap. Perfect for real-time apps!', level: 'great' });
+      tips.push({ icon: 'SPEED', text: 'Haiku is fast (~200 tokens/sec) and inexpensive — suited to real-time workloads.', level: 'great' });
     if (model.includes('claude-sonnet'))
-      tips.push({ icon: '✨', text: 'Great choice! Sonnet hits the sweet spot — strong reasoning at reasonable cost.', level: 'great' });
+      tips.push({ icon: 'BALANCE', text: 'Sonnet hits the sweet spot — strong reasoning at reasonable cost.', level: 'great' });
     if (model.includes('claude-opus'))
-      tips.push({ icon: '🧠', text: 'Opus = maximum intelligence. Costly at ~$15/M — reserve for complex reasoning.', level: 'warn' });
+      tips.push({ icon: 'COST', text: 'Opus offers maximum intelligence but costs ~$15 per million tokens — reserve for complex reasoning.', level: 'warn' });
     if (model.includes('deepseek'))
-      tips.push({ icon: '🔥', text: 'Oh wow, DeepSeek R1! Near-GPT-4 quality at fraction of the cost. Great call!', level: 'great' });
+      tips.push({ icon: 'VALUE', text: 'DeepSeek matches near-GPT-4 quality at a fraction of the cost.', level: 'great' });
     if (model.includes('llama'))
-      tips.push({ icon: '🦙', text: 'Open-source champion! Run locally for zero API cost + full data privacy.', level: 'great' });
+      tips.push({ icon: 'OSS', text: 'Open-source: run locally for zero API cost and full data residency.', level: 'great' });
     if (model.includes('gemini'))
-      tips.push({ icon: '♊', text: 'Gemini Flash has a massive 1M context window — ideal for huge documents.', level: 'info' });
+      tips.push({ icon: 'CTX', text: 'Gemini supports very large context windows — ideal for long documents.', level: 'info' });
 
     if (temp > 0.85)
-      tips.push({ icon: '🎲', text: `Temperature ${temp} is high → creative but unpredictable. Use <0.3 for factual tasks.`, level: 'warn' });
+      tips.push({ icon: 'WARN', text: `Temperature ${temp} is high — creative but unpredictable. Use < 0.3 for factual tasks.`, level: 'warn' });
     if (temp < 0.2)
-      tips.push({ icon: '🎯', text: `Low temperature (${temp}) → very consistent. Great for structured outputs & JSON.`, level: 'info' });
+      tips.push({ icon: 'INFO', text: `Low temperature (${temp}) gives consistent output — good for structured / JSON responses.`, level: 'info' });
     if (tok > 3000)
-      tips.push({ icon: '📏', text: `Max tokens ${tok} = higher cost per call. Only use if you need long responses.`, level: 'warn' });
+      tips.push({ icon: 'COST', text: `Max tokens ${tok} increases cost per call. Only use if long responses are required.`, level: 'warn' });
     if (tok <= 512)
-      tips.push({ icon: '✂️', text: `${tok} max tokens is tight — responses will be cut short if too long.`, level: 'warn' });
+      tips.push({ icon: 'WARN', text: `${tok} max tokens is tight — responses may be cut short.`, level: 'warn' });
   }
 
   if (node.type === 'retriever') {
@@ -297,46 +297,46 @@ function getNodeTips(node: PipelineNode): Tip[] {
     const chunk    = Number(cfg.chunk_size ?? 512);
 
     if (strategy === 'Hybrid')
-      tips.push({ icon: '🏆', text: 'Hybrid search combines dense vectors + BM25 — consistently best retrieval accuracy!', level: 'great' });
+      tips.push({ icon: 'TOP', text: 'Hybrid search combines dense vectors plus BM25 — consistently best retrieval accuracy.', level: 'great' });
     if (strategy === 'Dense Vector')
-      tips.push({ icon: '🔢', text: 'Dense vectors excel at semantic similarity. Add BM25 (Hybrid) for keyword matches too.', level: 'info' });
+      tips.push({ icon: 'INFO', text: 'Dense vectors excel at semantic similarity. Add BM25 (Hybrid) for keyword matches.', level: 'info' });
     if (strategy === 'BM25')
-      tips.push({ icon: '🔤', text: 'BM25 is fast & keyword-exact. Misses paraphrased queries — consider Hybrid.', level: 'info' });
+      tips.push({ icon: 'INFO', text: 'BM25 is fast and keyword-exact. Misses paraphrased queries — consider Hybrid.', level: 'info' });
     if (strategy === 'Cross-Encoder')
-      tips.push({ icon: '🎓', text: 'Cross-encoder = highest precision but slowest. Best as a re-ranking step after dense retrieval.', level: 'info' });
+      tips.push({ icon: 'INFO', text: 'Cross-encoder gives highest precision but is slowest. Best used as a re-ranker after dense retrieval.', level: 'info' });
     if (topK > 10)
-      tips.push({ icon: '⚠️', text: `Top-K ${topK} is high — more context tokens sent to LLM = higher cost + slower. Try 5–7.`, level: 'warn' });
+      tips.push({ icon: 'WARN', text: `Top-K ${topK} is high — more context tokens to LLM means higher cost and latency. Try 5–7.`, level: 'warn' });
     if (topK <= 3)
-      tips.push({ icon: '🎯', text: `Top-K ${topK} is very selective. Great for precision, but may miss relevant context.`, level: 'info' });
+      tips.push({ icon: 'INFO', text: `Top-K ${topK} is very selective. Good for precision, may miss relevant context.`, level: 'info' });
     if (chunk < 256)
-      tips.push({ icon: '🧩', text: `Chunk size ${chunk} is small — fine-grained retrieval. Good for Q&A, less for summaries.`, level: 'info' });
+      tips.push({ icon: 'INFO', text: `Chunk size ${chunk} is small — fine-grained retrieval. Good for Q&A, less for summaries.`, level: 'info' });
     if (chunk > 1024)
-      tips.push({ icon: '📦', text: `Chunk size ${chunk} is large — more context per chunk. May dilute relevance scores.`, level: 'warn' });
+      tips.push({ icon: 'WARN', text: `Chunk size ${chunk} is large — more context per chunk but may dilute relevance scores.`, level: 'warn' });
   }
 
   if (node.type === 'router') {
     const strategy = String(cfg.strategy || '');
     if (strategy === 'Intent-based')
-      tips.push({ icon: '🧠', text: 'Intent routing uses an LLM classifier — smart but adds latency. Great for complex flows.', level: 'info' });
+      tips.push({ icon: 'INFO', text: 'Intent routing uses an LLM classifier — smart but adds latency. Good for complex flows.', level: 'info' });
     if (strategy === 'Score-based')
-      tips.push({ icon: '📊', text: 'Score-based routing is fast & deterministic. Perfect for confidence threshold decisions.', level: 'great' });
+      tips.push({ icon: 'GOOD', text: 'Score-based routing is fast and deterministic. Suited to confidence-threshold decisions.', level: 'great' });
     if (strategy === 'Round-robin')
-      tips.push({ icon: '🔄', text: 'Round-robin distributes load evenly — useful for A/B testing different model configs.', level: 'info' });
-    tips.push({ icon: '💡', text: 'Routers save cost! Route simple queries to cheap models, complex ones to powerful models.', level: 'great' });
+      tips.push({ icon: 'INFO', text: 'Round-robin distributes load evenly — useful for A/B testing different model configs.', level: 'info' });
+    tips.push({ icon: 'TIP', text: 'Routers cut cost: send simple queries to cheap models, complex ones to powerful models.', level: 'great' });
   }
 
   if (node.type === 'input') {
-    tips.push({ icon: '📥', text: 'The Input node is your pipeline\'s entry point. Connect its output to LLM prompt or Retriever query ports.', level: 'info' });
-    tips.push({ icon: '💡', text: 'Tip: Add a Retriever between Input → LLM to build a RAG pipeline that grounds answers in your docs.', level: 'info' });
+    tips.push({ icon: 'IN', text: 'The Input node is the pipeline entry point. Connect its output to an LLM prompt or Retriever query port.', level: 'info' });
+    tips.push({ icon: 'TIP', text: 'Add a Retriever between Input and LLM to build a RAG pipeline that grounds answers in your docs.', level: 'info' });
   }
 
   if (node.type === 'output') {
     const format = String(cfg.format || 'Text');
     if (format === 'JSON')
-      tips.push({ icon: '📋', text: 'JSON output — make sure your LLM system prompt instructs it to respond in valid JSON.', level: 'info' });
+      tips.push({ icon: 'FMT', text: 'JSON output — ensure the LLM system prompt instructs it to respond in valid JSON.', level: 'info' });
     if (format === 'Markdown')
-      tips.push({ icon: '✍️', text: 'Markdown output is great for chat UIs. Pair with a renderer like react-markdown.', level: 'info' });
-    tips.push({ icon: '🏁', text: 'Output node captures the final result. Connect from your last LLM or Router node.', level: 'info' });
+      tips.push({ icon: 'FMT', text: 'Markdown output is suited to chat UIs. Pair with a renderer like react-markdown.', level: 'info' });
+    tips.push({ icon: 'OUT', text: 'Output node captures the final result. Connect from your last LLM or Router node.', level: 'info' });
   }
 
   return tips.slice(0, 3); // max 3 tips
@@ -368,7 +368,8 @@ function SmartTips({ node }: { node: PipelineNode }) {
               transition={{ delay: i * 0.06, duration: 0.2 }}
               className="rounded-xl px-3 py-2.5 flex gap-2.5 items-start"
               style={{ background: style.bg, border: `1px solid ${style.border}` }}>
-              <span className="text-[13px] flex-shrink-0 leading-none mt-0.5">{tip.icon}</span>
+              <span className="text-[9px] font-mono font-bold flex-shrink-0 px-1.5 py-0.5 rounded mt-0.5"
+                style={{ background: 'rgba(91,0,232,0.08)', color: '#5B00E8', letterSpacing: '0.05em' }}>{tip.icon}</span>
               <p className="text-[11px] leading-relaxed text-[#374151]">{tip.text}</p>
             </motion.div>
           );
@@ -605,7 +606,7 @@ function KeyboardHelpModal({ onClose }: { onClose: () => void }) {
 
 /* ─── Main Playground ───────────────────────────────────────────────────── */
 export default function Playground() {
-  useAuth();
+  const { token } = useAuth();
   const svgRef = useRef<SVGSVGElement>(null);
   const nodeCounter = useRef(100); // stable ID counter — avoids Date.now() in render
 
@@ -628,7 +629,55 @@ export default function Playground() {
   const [showLoadMenu, setShowLoadMenu] = useState(false);
 
   useEffect(() => {
-    try { const saved = JSON.parse(localStorage.getItem('archon_pipelines') || '[]'); setPipelines(saved); } catch { /* ignore */ }
+    // Built-in starter pipelines so Load is never empty
+    const BUILTIN: SavedPipeline[] = [
+      {
+        name: 'RAG Q&A (default)',
+        nodes: STARTER_NODES,
+        edges: STARTER_EDGES,
+        savedAt: new Date().toISOString(),
+      },
+      {
+        name: 'Direct LLM chat',
+        nodes: [
+          { id: 'b1', type: 'input',  x: 80,  y: 200, config: { placeholder: 'User message…' }, status: 'idle' },
+          { id: 'b2', type: 'llm',    x: 380, y: 200, config: { model: 'claude-haiku-4-5', temperature: 0.7, max_tokens: 1024, system_prompt: 'You are a helpful assistant.' }, status: 'idle' },
+          { id: 'b3', type: 'output', x: 720, y: 200, config: { label: 'Response', format: 'Markdown' }, status: 'idle' },
+        ],
+        edges: [
+          { id: 'be1', fromNode: 'b1', fromPort: 'prompt',   toNode: 'b2', toPort: 'prompt' },
+          { id: 'be2', fromNode: 'b2', fromPort: 'response', toNode: 'b3', toPort: 'result' },
+        ],
+        savedAt: new Date().toISOString(),
+      },
+      {
+        name: 'Router + dual LLM',
+        nodes: [
+          { id: 'r1', type: 'input',     x: 60,  y: 220, config: { placeholder: 'Customer question…' }, status: 'idle' },
+          { id: 'r2', type: 'router',    x: 320, y: 220, config: { strategy: 'Intent-based', label_a: 'Technical', label_b: 'Billing' }, status: 'idle' },
+          { id: 'r3', type: 'llm',       x: 620, y: 120, config: { model: 'claude-opus-4-5',   temperature: 0.3, max_tokens: 1500, system_prompt: 'You are a senior support engineer.' }, status: 'idle' },
+          { id: 'r4', type: 'llm',       x: 620, y: 320, config: { model: 'claude-haiku-4-5',  temperature: 0.5, max_tokens: 800,  system_prompt: 'You are a billing specialist.' },     status: 'idle' },
+          { id: 'r5', type: 'output',    x: 940, y: 220, config: { label: 'Final reply', format: 'Markdown' }, status: 'idle' },
+        ],
+        edges: [
+          { id: 're1', fromNode: 'r1', fromPort: 'prompt',   toNode: 'r2', toPort: 'input' },
+          { id: 're2', fromNode: 'r2', fromPort: 'route_a',  toNode: 'r3', toPort: 'prompt' },
+          { id: 're3', fromNode: 'r2', fromPort: 'route_b',  toNode: 'r4', toPort: 'prompt' },
+          { id: 're4', fromNode: 'r3', fromPort: 'response', toNode: 'r5', toPort: 'result' },
+          { id: 're5', fromNode: 'r4', fromPort: 'response', toNode: 'r5', toPort: 'result' },
+        ],
+        savedAt: new Date().toISOString(),
+      },
+    ];
+    try {
+      const saved = JSON.parse(localStorage.getItem('archon_pipelines') || '[]');
+      // Merge — user-saved first, then built-ins not already present by name.
+      const byName = new Set(saved.map((p: SavedPipeline) => p.name));
+      const merged = [...saved, ...BUILTIN.filter(b => !byName.has(b.name))];
+      setPipelines(merged);
+    } catch {
+      setPipelines(BUILTIN);
+    }
   }, []);
 
   const savePipeline = () => {
@@ -728,21 +777,60 @@ export default function Playground() {
 
   const runPipeline = async (prompt: string) => {
     setShowRunModal(false); setIsRunning(true);
-    const order: NodeType[] = ['input', 'retriever', 'router', 'llm', 'output'];
-    const sortedNodes = [...nodes].sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
-    const MOCK: Record<NodeType, string> = {
-      input:     prompt,
-      retriever: `Retrieved 5 chunks.\n[1] Context about "${prompt.split(' ').slice(0, 3).join(' ')}"…\n[2] Related docs…`,
-      router:    `Routed → ${Math.random() > 0.5 ? 'Technical' : 'General'} branch`,
-      llm:       `Here is a comprehensive answer about "${prompt.slice(0, 38)}…"\n\nKey aspects: core principles, recent developments, practical applications.`,
-      output:    `✓ Delivered · Tokens: ${Math.floor(Math.random() * 400 + 200)} · Latency: ${(Math.random() * 2 + 0.8).toFixed(1)}s`,
-    };
-    for (const node of sortedNodes) {
-      setNodes(prev => prev.map(n => n.id === node.id ? { ...n, status: 'running', output: undefined } : n));
-      await new Promise(r => setTimeout(r, 500 + Math.random() * 700));
-      setNodes(prev => prev.map(n => n.id === node.id ? { ...n, status: 'done', output: MOCK[node.type] } : n));
+
+    // Mark every node as running up-front so the UI shows immediate activity
+    // even while the backend is doing the real work.
+    setNodes(prev => prev.map(n => ({ ...n, status: 'running' as RunStatus, output: undefined })));
+
+    try {
+      const res = await fetch('/v1/playground/run', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token || 'arch_test_key_dev'}`,
+        },
+        body: JSON.stringify({
+          nodes: nodes.map(n => ({ id: n.id, type: n.type, config: n.config })),
+          edges: edges.map(e => ({
+            id: e.id, fromNode: e.fromNode, fromPort: e.fromPort,
+            toNode: e.toNode, toPort: e.toPort,
+          })),
+          prompt,
+        }),
+      });
+      const data = await res.json();
+      if (Array.isArray(data?.results)) {
+        // Walk results in the order the backend executed them so the UI
+        // animation matches the real DAG topology.
+        for (const r of data.results) {
+          await new Promise(rr => setTimeout(rr, 250));
+          setNodes(prev => prev.map(n => n.id === r.id
+            ? { ...n, status: r.status as RunStatus, output: r.output } : n));
+        }
+      } else {
+        throw new Error('Malformed response from /v1/playground/run');
+      }
+    } catch {
+      // Backend offline or malformed response — fall back to deterministic
+      // local mock so the demo never appears broken.
+      const order: NodeType[] = ['input', 'retriever', 'router', 'llm', 'output'];
+      const sortedNodes = [...nodes].sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
+      const FALLBACK: Record<NodeType, string> = {
+        input:     prompt,
+        retriever: `[Offline] Retrieved 3 stub docs matching "${prompt.split(' ').slice(0, 3).join(' ')}"`,
+        router:    `[Offline] Routed → ${prompt.toLowerCase().includes('code') ? 'Technical' : 'General'}`,
+        llm:       `[Offline stub] Real LLM call requires a configured API key. Prompt: "${prompt.slice(0, 60)}…"`,
+        output:    `[Offline] Stub output rendered`,
+      };
+      for (const node of sortedNodes) {
+        await new Promise(r => setTimeout(r, 400));
+        setNodes(prev => prev.map(n => n.id === node.id
+          ? { ...n, status: 'done', output: FALLBACK[node.type] } : n));
+      }
+    } finally {
+      setIsRunning(false);
     }
-    setIsRunning(false);
   };
 
   const clearCanvas = () => { setNodes([]); setEdges([]); setSelectedId(null); };
