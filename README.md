@@ -85,6 +85,8 @@ Input Text
 
 ## Getting Started
 
+Deployed on Railway + Vercel.
+
 ### Prerequisites
 - Python 3.11+
 - Node.js 18+
