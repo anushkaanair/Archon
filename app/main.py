@@ -16,8 +16,41 @@ from fastapi.responses import JSONResponse
 from app.api.v1.router import v1_router
 from app.api.auth import router as auth_router
 from app.config import get_settings
+from app.logging_config import configure_logging, get_logger
 from app.middleware import RateLimitMiddleware, RequestIDMiddleware
 from app.schemas.common import HealthResponse
+
+# Configure structured JSON logging before anything else runs
+configure_logging()
+log = get_logger(__name__)
+
+
+def _validate_env() -> None:
+    """Crash fast if critical environment variables are missing.
+
+    Called at the very top of lifespan so the error is visible immediately
+    rather than surfacing as a cryptic 500 in the middle of a request.
+    """
+    settings = get_settings()
+    errors: list[str] = []
+
+    if not settings.google_api_key and not settings.anthropic_api_key and not settings.openai_api_key:
+        errors.append(
+            "At least one LLM API key is required: "
+            "GOOGLE_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY"
+        )
+
+    if settings.api_key_hash_secret in ("change-me-in-production", ""):
+        if "sqlite" not in settings.database_url:  # only enforce in prod
+            errors.append("API_KEY_HASH_SECRET must be set to a strong random value in production")
+
+    if errors:
+        for err in errors:
+            log.error("Environment validation failed", error=err)
+        raise RuntimeError(
+            "Startup aborted — fix the following environment variables:\n"
+            + "\n".join(f"  • {e}" for e in errors)
+        )
 
 
 async def _seed_on_startup() -> None:
@@ -37,14 +70,12 @@ async def _seed_on_startup() -> None:
     from app.db.session import async_session_factory
 
     async with async_session_factory() as session:
-        # Check if model registry is already populated
         count_result = await session.execute(
             select(func.count()).select_from(ModelRegistryEntry)
         )
         count = count_result.scalar_one()
 
         if count == 0:
-            # Import seed data without executing the __main__ block
             import sys
             sys.path.insert(0, ".")
             from init_db import MODELS_SEED  # noqa: PLC0415
@@ -53,11 +84,11 @@ async def _seed_on_startup() -> None:
                 entry = ModelRegistryEntry(id=uuid.uuid4(), **m)
                 session.add(entry)
 
-            print(f"[startup] Seeded {len(MODELS_SEED)} models into model_registry.")
+            log.info("Model registry seeded", count=len(MODELS_SEED))
         else:
-            print(f"[startup] Model registry already has {count} entries — skipping seed.")
+            log.info("Model registry already populated", count=count)
 
-        # Ensure the dev API key exists (used by Builder.tsx fallback)
+        # Ensure the dev API key exists
         settings = get_settings()
         raw_key = "arch_test_key_dev"
         key_hash = hashlib.sha256(
@@ -68,7 +99,6 @@ async def _seed_on_startup() -> None:
             select(ApiKey).where(ApiKey.key_hash == key_hash)
         )
         if existing_key.scalar_one_or_none() is None:
-            # Find or create a dev user for this key
             from app.db.models.user import User
             dev_result = await session.execute(
                 select(User).where(User.email == "developer@archon.ai")
@@ -93,31 +123,24 @@ async def _seed_on_startup() -> None:
                 key_prefix=raw_key[:8],
                 is_active=True,
             ))
-            print("[startup] Created dev API key 'arch_test_key_dev'.")
+            log.info("Dev API key created", key_prefix="arch_tes")
 
         await session.commit()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Manage application lifecycle — startup and shutdown.
+    """Manage application lifecycle — startup and shutdown."""
+    # Validate environment early — crash immediately with a clear message
+    _validate_env()
 
-    On startup:
-    - Initialise database tables (SQLAlchemy create_all)
-    - Initialise Redis connection pool
-    - Initialise Langfuse tracer
-
-    On shutdown:
-    - Close Redis connection
-    - Flush Langfuse traces
-    """
     settings = get_settings()
+    log.info("Archon starting", version=settings.app_version)
 
-    # ── Startup ──────────────────────────────────────────────────
-    # Database — ensure all tables exist (safe no-op if already up to date)
+    # ── Database ──────────────────────────────────────────────────
     from app.db.session import engine
     from app.db.base import Base
-    import app.db.models as _models  # noqa: F401 — register all models with metadata
+    import app.db.models as _models  # noqa: F401 — register all models
 
     # Enable pgvector extension on PostgreSQL (no-op on SQLite)
     try:
@@ -125,57 +148,54 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             await conn.execute(
                 __import__("sqlalchemy").text("CREATE EXTENSION IF NOT EXISTS vector")
             )
-        print("[startup] pgvector extension enabled.")
+        log.info("pgvector extension enabled")
     except Exception:
-        pass  # SQLite or pgvector not available — knowledge base will degrade gracefully
+        log.info("pgvector not available — knowledge base will use BM25 only")
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    # Seed model registry + dev API key if the registry is empty
+    log.info("Database tables ready")
+
+    # ── Seed ──────────────────────────────────────────────────────
     try:
         await _seed_on_startup()
-    except Exception as e:
-        print(f"[startup] Seed skipped: {e}")
+    except Exception as exc:
+        log.warning("Seed skipped", error=str(exc))
 
-    # Redis
+    # ── Redis ─────────────────────────────────────────────────────
     redis_client = None
     try:
         from app.cache.redis_client import create_redis_client
         redis_client = await create_redis_client()
         app.state.redis = redis_client
-    except Exception:
+        log.info("Redis connected")
+    except Exception as exc:
+        log.warning("Redis unavailable — rate limiting disabled", error=str(exc))
         app.state.redis = None
 
-    # Langfuse
+    # ── Langfuse ──────────────────────────────────────────────────
     try:
         from app.observability.langfuse_tracer import get_tracer
         app.state.tracer = get_tracer()
+        log.info("Langfuse tracer initialised")
     except Exception:
         app.state.tracer = None
 
+    log.info("Archon ready")
     yield
 
-    # ── Shutdown ─────────────────────────────────────────────────
+    # ── Shutdown ──────────────────────────────────────────────────
+    log.info("Archon shutting down")
     if redis_client:
         await redis_client.close()
-
     if hasattr(app.state, "tracer") and app.state.tracer:
         app.state.tracer.flush()
+    log.info("Shutdown complete")
 
 
 def create_app() -> FastAPI:
-    """Create and configure the Archon FastAPI application.
-
-    This factory function builds the app with:
-    - Versioned API routes (/v1/)
-    - Request ID middleware
-    - Rate limiting middleware (Redis-backed)
-    - CORS middleware
-    - Global exception handlers
-    - Health check endpoint
-    - Auto-generated OpenAPI documentation
-    """
+    """Create and configure the Archon FastAPI application."""
     settings = get_settings()
 
     app = FastAPI(
@@ -192,7 +212,7 @@ def create_app() -> FastAPI:
         openapi_url="/openapi.json",
     )
 
-    # ── Middleware (order matters — last added = first executed) ──
+    # ── Middleware (last added = first executed) ──────────────────
     import os
     cors_raw = os.getenv("CORS_ORIGINS", "")
     cors_origins = [o.strip() for o in cors_raw.split(",") if o.strip()] or ["*"]
@@ -225,12 +245,14 @@ def create_app() -> FastAPI:
     # ── Global exception handler ─────────────────────────────────
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-        """Catch-all error handler ensuring consistent error format.
-
-        Logs the error with request ID for tracing but does not expose
-        internal details to the client.
-        """
         request_id = getattr(request.state, "request_id", None)
+        log.error(
+            "Unhandled exception",
+            request_id=request_id,
+            path=str(request.url.path),
+            error=str(exc),
+            exc_info=True,
+        )
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
