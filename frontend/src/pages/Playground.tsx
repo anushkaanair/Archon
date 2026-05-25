@@ -607,6 +607,7 @@ function KeyboardHelpModal({ onClose }: { onClose: () => void }) {
 export default function Playground() {
   useAuth();
   const svgRef = useRef<SVGSVGElement>(null);
+  const nodeCounter = useRef(100); // stable ID counter — avoids Date.now() in render
 
   const [nodes, setNodes]           = useState<PipelineNode[]>(STARTER_NODES);
   const [edges, setEdges]           = useState<Edge[]>(STARTER_EDGES);
@@ -650,7 +651,7 @@ export default function Playground() {
 
   const addNode = (type: NodeType) => {
     const def = NODE_DEFS[type];
-    const id = `n${Date.now()}`;
+    const id = `n${++nodeCounter.current}`;
     setNodes(prev => [...prev, {
       id, type,
       x: snap(120 + Math.random() * 260),
