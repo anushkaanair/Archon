@@ -24,12 +24,13 @@ const TYPE_META: Record<string, { color: string; label: string }> = {
   update:        { color: '#6B7280', label: 'Update'   },
 };
 
-function isNew(d: string) { return Date.now() - new Date(d).getTime() < 7 * 864e5; }
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+function isNew(d: string) { return Date.now() - new Date(d).getTime() < 7 * ONE_DAY_MS; }
 
 /* ─── Stat card ─────────────────────────────────────────────────────────── */
 function StatCard({ title, value, sub, icon: Icon, loading, color, delay = 0 }: {
   title: string; value: string | number | null; sub?: string;
-  icon: any; loading: boolean; color: string; delay?: number;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; loading: boolean; color: string; delay?: number;
 }) {
   return (
     <motion.div
@@ -157,16 +158,48 @@ function EmptyState() {
 
 /* ─── News feed ─────────────────────────────────────────────────────────── */
 function NewsFeed() {
-  const sorted = [...(newsData as NewsItem[])].sort((a, b) => +new Date(b.date) - +new Date(a.date));
+  // Pull live RSS from /v1/news; fall back to the curated JSON bundle if the
+  // backend is unreachable so the right rail never goes blank.
+  const [live, setLive] = useState<NewsItem[] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch('/v1/news', { credentials: 'include' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (!alive || !d?.items) return;
+        const mapped: NewsItem[] = d.items.map((it: any, i: number) => ({
+          id: it.id || `live-${i}`,
+          date: it.published_at || new Date().toISOString(),
+          title: it.title,
+          summary: it.summary || it.title,
+          type: 'update',
+          link: it.link,
+          provider: it.source,
+        }));
+        setLive(mapped);
+      })
+      .catch(() => { /* keep curated fallback */ });
+    return () => { alive = false; };
+  }, []);
+
+  const isLive  = !!(live && live.length > 0);
+  const source  = isLive ? live! : (newsData as NewsItem[]);
+  const sorted  = [...source].sort((a, b) => +new Date(b.date) - +new Date(a.date));
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 mb-4">
         <Newspaper className="w-3.5 h-3.5 text-[#9CA3AF]" strokeWidth={1.5} />
-        <span className="text-[13px] font-bold text-[#0D0D0D]">AI News</span>
-        <span className="ml-auto flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full"
-          style={{ background: 'rgba(5,150,105,0.1)', color: '#059669', border: '1px solid rgba(5,150,105,0.2)' }}>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse" />
-          Live
+        <span className="text-[13px] font-bold" style={{ color: 'var(--text-primary)' }}>AI Industry News</span>
+        <span
+          className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full"
+          title={isLive ? 'Live RSS feed: OpenAI · Anthropic · DeepMind · HuggingFace · MIT — refreshed every 30 min' : 'Curated weekly highlights — live feed not yet loaded'}
+          style={{
+            color: isLive ? '#059669' : 'var(--text-muted)',
+            background: isLive ? 'rgba(5,150,105,0.08)' : 'rgba(91,0,232,0.05)',
+            border: isLive ? '1px solid rgba(5,150,105,0.2)' : '1px solid transparent',
+          }}>
+          {isLive ? 'Live · RSS' : 'Curated'}
         </span>
       </div>
       <div className="flex-1 overflow-y-auto space-y-2 pr-0.5" style={{ maxHeight: 'calc(100vh - 220px)' }}>
@@ -371,8 +404,8 @@ export default function Dashboard() {
                   {/* Main info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <p className="text-[13px] font-semibold text-[#374151] group-hover:text-[#0D0D0D] transition-colors truncate">
-                        {bp.input_text || '(no description)'}
+                      <p className="text-[13px] font-semibold transition-colors truncate" style={{ color: '#374151' }}>
+                        {bp.title || (bp.input_text ? bp.input_text.slice(0, 80) : '(no description)')}
                       </p>
                       {bp.confidence_flag === 'low_confidence' && (
                         <span className="text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
@@ -408,16 +441,18 @@ export default function Dashboard() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    <Link to={`/blueprints/${bp.blueprint_id}`}
-                      className="w-8 h-8 rounded-xl flex items-center justify-center transition-all text-[#CBD5E1]"
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(91,0,232,0.07)'; (e.currentTarget as HTMLElement).style.color = '#5B00E8'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#CBD5E1'; }}>
+                    <Link
+                      to={`/blueprints/${bp.blueprint_id}`}
+                      aria-label="View blueprint detail"
+                      className="w-8 h-8 rounded-xl flex items-center justify-center transition-all text-[#CBD5E1] hover:bg-[rgba(91,0,232,0.07)] hover:text-[#5B00E8]"
+                    >
                       <ExternalLink className="w-3.5 h-3.5" />
                     </Link>
-                    <button onClick={() => downloadBlueprint(bp.blueprint_id)}
-                      className="w-8 h-8 rounded-xl flex items-center justify-center transition-all text-[#CBD5E1]"
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F4F2FF'; (e.currentTarget as HTMLElement).style.color = '#374151'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#CBD5E1'; }}>
+                    <button
+                      onClick={() => downloadBlueprint(bp.blueprint_id)}
+                      aria-label="Download blueprint as JSON"
+                      className="w-8 h-8 rounded-xl flex items-center justify-center transition-all text-[#CBD5E1] hover:bg-[#F4F2FF] hover:text-[#374151]"
+                    >
                       <Download className="w-3.5 h-3.5" />
                     </button>
                   </div>
