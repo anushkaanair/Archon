@@ -14,7 +14,10 @@ from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.estimate import router as estimate_router
 from app.api.v1.explain import router as explain_router
 from app.api.v1.models import router as models_router
+from app.api.v1.news import router as news_router
+from app.api.v1.playground import router as playground_router
 from app.api.v1.recommend import router as recommend_router
+from app.api.v1.users import router as users_router
 
 v1_router = APIRouter(prefix="/v1")
 
@@ -25,3 +28,6 @@ v1_router.include_router(estimate_router, tags=["Estimate"])
 v1_router.include_router(explain_router, tags=["Explain"])
 v1_router.include_router(models_router, tags=["Models"])
 v1_router.include_router(dashboard_router, tags=["Dashboard"])
+v1_router.include_router(playground_router)
+v1_router.include_router(users_router)
+v1_router.include_router(news_router)
