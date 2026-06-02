@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import BlueprintDetail from './pages/BlueprintDetail';
+import ModelDetail from './pages/ModelDetail';
 import NotFound from './pages/NotFound';
 
 import { AuthProvider } from './context/AuthContext';
@@ -28,6 +29,7 @@ const router = createBrowserRouter([
           { path: '/playground',     element: <Playground /> },   // Visual node editor
           { path: '/settings',       element: <Settings /> },
           { path: '/blueprints/:id', element: <BlueprintDetail /> },
+          { path: '/models/:id',     element: <ModelDetail /> },
           // Legacy redirect support
           { path: '/blueprint',      element: <Builder /> },
         ],
