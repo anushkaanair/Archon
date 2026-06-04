@@ -40,71 +40,71 @@ const PIPELINE_STEPS = [
 const KEYWORD_TIPS = [
   {
     keywords: ['image', 'vision', 'photo', 'visual', 'picture', 'screenshot'],
-    emoji: '🖼️', color: '#2563EB', bg: 'rgba(37,99,235,0.06)', border: 'rgba(37,99,235,0.18)',
-    reaction: 'Vision task detected!',
-    tip: 'GPT-4o and Claude claude-sonnet-4 handle vision. Images add ~$0.001–0.003/call — budget accordingly.',
+    emoji: 'VIS', color: '#2563EB', bg: 'rgba(37,99,235,0.06)', border: 'rgba(37,99,235,0.18)',
+    reaction: 'Vision task detected',
+    tip: 'GPT-4o and Claude Sonnet 4.5 handle vision. Images add ~$0.001–0.003 per call — budget accordingly.',
   },
   {
     keywords: ['real-time', 'realtime', '100ms', '200ms', 'streaming', 'instant', 'live'],
-    emoji: '⚡', color: '#D97706', bg: 'rgba(217,119,6,0.06)', border: 'rgba(217,119,6,0.18)',
-    reaction: 'Ultra-low latency needed!',
-    tip: 'Stream tokens. Use Claude Haiku or GPT-4o-mini + edge deployment. Avoid full JSON wait.',
+    emoji: 'LAT', color: '#D97706', bg: 'rgba(217,119,6,0.06)', border: 'rgba(217,119,6,0.18)',
+    reaction: 'Ultra-low latency required',
+    tip: 'Stream tokens. Use Claude Haiku or GPT-4o-mini with edge deployment. Avoid full JSON wait.',
   },
   {
     keywords: ['million', '1m ', '5m ', '10m', 'millions', 'high volume', 'billions', '1,000,000'],
-    emoji: '💸', color: '#EF4444', bg: 'rgba(239,68,68,0.06)', border: 'rgba(239,68,68,0.18)',
-    reaction: 'Ohh, this might get costly!',
-    tip: 'At millions of requests, $0.001/call = $1,000/mo+. Batch APIs + semantic caching save up to 60%.',
+    emoji: 'VOL', color: '#EF4444', bg: 'rgba(239,68,68,0.06)', border: 'rgba(239,68,68,0.18)',
+    reaction: 'High volume detected',
+    tip: 'At millions of requests, $0.001/call equals $1,000+/month. Batch APIs and semantic caching save up to 60%.',
   },
   {
     keywords: ['rag', 'retrieval', 'document', 'pdf', 'knowledge base', 'vector', 'embedding'],
-    emoji: '📚', color: '#5B00E8', bg: 'rgba(91,0,232,0.06)', border: 'rgba(91,0,232,0.18)',
-    reaction: 'Smart RAG architecture!',
+    emoji: 'RAG', color: '#5B00E8', bg: 'rgba(91,0,232,0.06)', border: 'rgba(91,0,232,0.18)',
+    reaction: 'RAG architecture',
     tip: 'Hybrid search (dense + BM25) beats dense-only by ~18% recall. Add a cross-encoder reranker.',
   },
   {
     keywords: ['hipaa', 'gdpr', 'pii', 'compliance', 'healthcare', 'medical', 'legal', 'audit'],
-    emoji: '🔒', color: '#D97706', bg: 'rgba(217,119,6,0.06)', border: 'rgba(217,119,6,0.18)',
-    reaction: 'Compliance requirements!',
+    emoji: 'SEC', color: '#D97706', bg: 'rgba(217,119,6,0.06)', border: 'rgba(217,119,6,0.18)',
+    reaction: 'Compliance requirements detected',
     tip: 'Self-hosted Llama or Azure OpenAI Private Endpoint. Zero PII to public third-party APIs.',
   },
   {
     keywords: ['code', 'coding', 'programming', 'sql', 'github', 'review', 'debug'],
-    emoji: '💻', color: '#059669', bg: 'rgba(5,150,105,0.06)', border: 'rgba(5,150,105,0.18)',
-    reaction: 'Great use case for code AI!',
-    tip: 'Claude claude-sonnet-4 leads on code tasks. DeepSeek-Coder is 10x cheaper and nearly as good.',
+    emoji: 'DEV', color: '#059669', bg: 'rgba(5,150,105,0.06)', border: 'rgba(5,150,105,0.18)',
+    reaction: 'Code workload detected',
+    tip: 'Claude Sonnet 4.5 leads on code tasks. DeepSeek-Coder is 10x cheaper and nearly as good.',
   },
   {
     keywords: ['open source', 'open-source', 'llama', 'mistral', 'self-hosted', 'on-prem'],
-    emoji: '🌿', color: '#059669', bg: 'rgba(5,150,105,0.06)', border: 'rgba(5,150,105,0.18)',
-    reaction: 'Oh wow, great choice!',
-    tip: 'Llama 3.3 70B matches GPT-4o on many tasks. Run on Groq for free, or self-host on RunPod.',
+    emoji: 'OSS', color: '#059669', bg: 'rgba(5,150,105,0.06)', border: 'rgba(5,150,105,0.18)',
+    reaction: 'Open-source preference noted',
+    tip: 'Llama 3.3 70B matches GPT-4o on many tasks. Run on Groq for inference, or self-host on RunPod.',
   },
   {
     keywords: ['chat', 'support', 'customer', 'helpdesk', 'faq', 'assistant'],
-    emoji: '💬', color: '#5B00E8', bg: 'rgba(91,0,232,0.06)', border: 'rgba(91,0,232,0.18)',
-    reaction: 'Conversational AI — solid!',
+    emoji: 'CHT', color: '#5B00E8', bg: 'rgba(91,0,232,0.06)', border: 'rgba(91,0,232,0.18)',
+    reaction: 'Conversational workload',
     tip: 'Claude Haiku is 10x cheaper than Sonnet for simple Q&A. Use Sonnet only for complex turns.',
   },
   {
     keywords: ['multimodal', 'audio', 'video', 'speech', 'transcription', 'whisper', 'voice'],
-    emoji: '🎙️', color: '#7C3AED', bg: 'rgba(124,58,237,0.06)', border: 'rgba(124,58,237,0.18)',
-    reaction: 'Multimodal pipeline!',
-    tip: 'Whisper for transcription → Claude/GPT for reasoning. Two-stage is more cost-efficient than end-to-end.',
+    emoji: 'AUD', color: '#7C3AED', bg: 'rgba(124,58,237,0.06)', border: 'rgba(124,58,237,0.18)',
+    reaction: 'Multimodal pipeline',
+    tip: 'Whisper for transcription, then Claude or GPT for reasoning. Two-stage is more cost-efficient than end-to-end.',
   },
 ];
 
-// Source: artificialanalysis.ai leaderboard (June 2026)
+// Sample rankings — your blueprint pulls live registry scores at generation time.
 const MODEL_GUIDE = [
-  { name: 'claude-opus-4.8',    badge: '👑 #1',    cost: '$$$$', note: 'Quality index 61 — best overall',         color: '#5B00E8' },
-  { name: 'gpt-5.5',            badge: '⭐ #2',    cost: '$$$$', note: 'Quality index 60 — OpenAI flagship',      color: '#059669' },
-  { name: 'gemini-3.1-pro',     badge: '💎 Value', cost: '$$$',  note: 'Quality 57, ~60% cheaper than top tier',  color: '#2563EB' },
-  { name: 'gpt-4o',             badge: '🔥 Vision',cost: '$$$',  note: 'Vision + function calling, battle-tested', color: '#059669' },
-  { name: 'mercury-2',          badge: '⚡ Speed', cost: '$$',   note: '996 tokens/sec — fastest available',       color: '#D97706' },
-  { name: 'llama-4-scout',      badge: '🌿 OSS',   cost: 'Free', note: '10M token context, self-hostable',         color: '#059669' },
-  { name: 'deepseek-r1',        badge: '🧠 Reason',cost: '$$',   note: 'Strong reasoning & code, open weights',    color: '#D97706' },
-  { name: 'qwen3.5-0.8b',       badge: '💸 Micro', cost: '$',    note: '$0.01 / 1M tokens — ultra low cost',       color: '#7C3AED' },
-  { name: 'mistral-large-2',    badge: '🇪🇺 EU',   cost: '$$',   note: 'GDPR-native, European data residency',    color: '#7C3AED' },
+  { name: 'claude-opus-4-5',    badge: '#1 Quality',  cost: '$$$$', note: 'Top quality on complex reasoning & code',  color: '#5B00E8' },
+  { name: 'gpt-4o',             badge: '#2 Quality',  cost: '$$$',  note: 'Vision + function calling, battle-tested', color: '#059669' },
+  { name: 'gemini-2.5-pro',     badge: 'Best value',  cost: '$$$',  note: '2M context, strong reasoning, great $/q',  color: '#2563EB' },
+  { name: 'claude-sonnet-4-5',  badge: 'Code-leader', cost: '$$$',  note: 'Leads on agentic & code tasks',            color: '#5B00E8' },
+  { name: 'gemini-2.0-flash',   badge: 'Fastest',     cost: '$$',   note: 'Sub-second median latency, very cheap',    color: '#D97706' },
+  { name: 'llama-3.3-70b',      badge: 'Open source', cost: 'Free', note: 'Open weights, self-hostable on Groq',      color: '#059669' },
+  { name: 'deepseek-v3',        badge: 'Reasoning',   cost: '$$',   note: 'Strong reasoning, open weights',           color: '#D97706' },
+  { name: 'gpt-4.1',            badge: 'Long ctx',    cost: '$$$',  note: '1M-token context, strong long-doc recall', color: '#7C3AED' },
+  { name: 'mistral-large-2',    badge: 'EU resident', cost: '$$',   note: 'GDPR-native, European data residency',     color: '#7C3AED' },
 ];
 
 
@@ -254,10 +254,15 @@ function LiveTipsPanel({ prompt }: { prompt: string }) {
         </div>
         <div className="p-2 space-y-1">
           {MODEL_GUIDE.map(m => (
-            <div key={m.name} className="flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-[#F9FAFB] transition-colors">
+            <Link
+              key={m.name}
+              to={`/models/${encodeURIComponent(m.name)}`}
+              className="flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-[#F4F2FF] transition-colors group"
+              title={`View full specs for ${m.name}`}
+            >
               <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: m.color }} />
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-mono font-bold text-[#374151] truncate">{m.name}</p>
+                <p className="text-[10px] font-mono font-bold text-[#374151] group-hover:text-[#5B00E8] truncate transition-colors">{m.name}</p>
                 <p className="text-[9px] text-[#9CA3AF]">{m.note}</p>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -265,7 +270,7 @@ function LiveTipsPanel({ prompt }: { prompt: string }) {
                   style={{ background: 'rgba(91,0,232,0.08)', color: '#5B00E8' }}>{m.badge}</span>
                 <span className="text-[9px] font-mono text-[#9CA3AF] w-8 text-right">{m.cost}</span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
@@ -320,6 +325,7 @@ export default function Builder() {
   const [currentStep, setCurrentStep] = useState(0);
   const [elapsedMs, setElapsedMs]     = useState(0);
   const [result, setResult]           = useState<any>(null);
+  const [apiError, setApiError]       = useState<string>('');
 
   const timerRef     = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -359,7 +365,7 @@ export default function Builder() {
   const handleBuild = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim()) return;
-    setLoading(true); setResult(null); setElapsedMs(0); setOfflineDemo(false);
+    setLoading(true); setResult(null); setElapsedMs(0); setOfflineDemo(false); setApiError('');
     simulateProgress();
     try {
       const res = await fetch('/v1/architect', {
@@ -380,20 +386,22 @@ export default function Builder() {
 
       const raw = await res.text();
 
-      // Backend returned something valid
       if (raw && raw.trim()) {
         try {
           const data = JSON.parse(raw);
           if (res.ok) { setResult(data); return; }
-          // HTTP error with body — fall through to demo
+          // Server returned a structured error — surface it with a retry button
+          const msg = data?.detail || data?.message || `Server error (HTTP ${res.status})`;
+          setApiError(String(msg));
+          return;
         } catch { /* invalid JSON — fall through to demo */ }
       }
 
-      // Empty or invalid response → show demo blueprint
+      // Empty or invalid response from a running backend → demo mode
       setOfflineDemo(true);
       setResult(generateMockBlueprint(prompt, requestVolume));
     } catch {
-      // Network error (backend not running) → show demo blueprint
+      // Network error (backend not running) → demo mode
       setOfflineDemo(true);
       setResult(generateMockBlueprint(prompt, requestVolume));
     } finally {
@@ -402,9 +410,52 @@ export default function Builder() {
   };
 
   const resetForm = () => {
-    setResult(null); setOfflineDemo(false); setCurrentStep(0); setPrompt('');
+    setResult(null); setOfflineDemo(false); setCurrentStep(0); setPrompt(''); setApiError('');
     try { localStorage.removeItem('archon_builder_draft'); } catch { /* ignore */ }
   };
+
+  /* ── API error view — shown when backend returns a real HTTP error ── */
+  if (apiError) {
+    return (
+      <div className="p-8 min-h-[70vh] flex flex-col items-center justify-center gap-6 max-w-lg mx-auto text-center">
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
+          style={{ background: 'rgba(239,68,68,0.08)', border: '1.5px solid rgba(239,68,68,0.2)' }}>
+          <AlertCircle className="w-8 h-8 text-[#EF4444]" />
+        </div>
+        <div>
+          <h2 className="text-[18px] font-bold text-[#0D0D0D] mb-2">Blueprint generation failed</h2>
+          <p className="text-[13px] text-[#6B7280] leading-relaxed max-w-sm mb-1">
+            The Archon engine returned an error. Try rephrasing your description or check the server status.
+          </p>
+          <div className="mt-3 px-4 py-3 rounded-xl text-[12px] font-mono text-left"
+            style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', color: '#EF4444' }}>
+            {apiError}
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={e => handleBuild(e as unknown as React.FormEvent)}
+            className="flex items-center gap-2 h-10 px-6 rounded-xl text-[13px] font-semibold text-white transition-all"
+            style={{ background: '#5B00E8', boxShadow: '0 2px 16px rgba(91,0,232,0.35)' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#4800BA'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#5B00E8'; }}
+          >
+            <RotateCcw className="w-3.5 h-3.5" /> Retry
+          </button>
+          <button
+            onClick={resetForm}
+            className="flex items-center gap-2 h-10 px-6 rounded-xl text-[13px] font-semibold transition-all"
+            style={{ background: 'white', border: '1.5px solid rgba(91,0,232,0.2)', color: '#374151' }}
+          >
+            Start over
+          </button>
+        </div>
+        <p className="text-[11px] text-[#9CA3AF]">
+          Tip: Try adding more detail — "a legal RAG bot for 50K queries/month" works better than "a chatbot".
+        </p>
+      </div>
+    );
+  }
 
   /* ── Loading view ── */
   if (loading) {
