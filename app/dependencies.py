@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import Depends, Header, HTTPException, status
@@ -96,6 +97,13 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or revoked credentials.",
+        )
+
+    # Enforce key expiry
+    if api_key.expires_at and api_key.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key has expired.",
         )
 
     user_result = await db.execute(

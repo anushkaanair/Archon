@@ -1,6 +1,6 @@
 """Semantic analysis service.
 
-Uses sentence-transformer embeddings to detect AI tasks from natural-language
+Uses Google text-embedding-004 to detect AI tasks from natural-language
 input. Works by computing cosine similarity between the input embedding and
 a set of pre-defined task label embeddings.
 
@@ -87,27 +87,28 @@ TASK_DEFINITIONS: list[dict[str, str]] = [
     },
 ]
 
-# Pre-computed task anchor embeddings (lazy-loaded)
+# Pre-computed task anchor embeddings (lazy-loaded, shared across requests)
 _task_embeddings: np.ndarray | None = None
 _task_labels: list[dict[str, str]] | None = None
 
 
-def _get_task_embeddings() -> tuple[np.ndarray, list[dict[str, str]]]:
-    """Lazy-compute embeddings for all task anchors.
+async def _get_task_embeddings() -> tuple[np.ndarray, list[dict[str, str]]]:
+    """Lazy-compute embeddings for all task anchors (async).
 
-    Cached after first call so subsequent analyses are instant.
+    Cached after first call so subsequent analyses skip the embedding step.
+    Not lock-protected — a harmless race on cold start recomputes once.
     """
     global _task_embeddings, _task_labels
 
     if _task_embeddings is None:
         anchors = [t["anchor"] for t in TASK_DEFINITIONS]
-        _task_embeddings = embed_texts(anchors)
+        _task_embeddings = await embed_texts(anchors)
         _task_labels = TASK_DEFINITIONS
 
-    return _task_embeddings, _task_labels
+    return _task_embeddings, _task_labels  # type: ignore[return-value]
 
 
-def detect_tasks(
+async def detect_tasks(
     input_text: str,
     threshold: float = 0.3,
     max_tasks: int = 5,
@@ -126,10 +127,11 @@ def detect_tasks(
     Returns:
         List of ``DetectedTask`` objects sorted by confidence.
     """
-    task_embs, task_defs = _get_task_embeddings()
+    task_embs, task_defs = await _get_task_embeddings()
 
     # Embed the input
-    input_emb = embed_texts([input_text])[0]
+    input_arr = await embed_texts([input_text])
+    input_emb = input_arr[0]
 
     # Compute cosine similarities (embeddings are already normalised)
     similarities = np.dot(task_embs, input_emb)

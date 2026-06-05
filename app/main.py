@@ -142,13 +142,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from app.db.base import Base
     import app.db.models as _models  # noqa: F401 — register all models
 
-    # Enable pgvector extension on PostgreSQL (no-op on SQLite)
+    # Enable pgvector extension and create performance indexes (PostgreSQL only)
     try:
+        from sqlalchemy import text
         async with engine.begin() as conn:
-            await conn.execute(
-                __import__("sqlalchemy").text("CREATE EXTENSION IF NOT EXISTS vector")
-            )
-        log.info("pgvector extension enabled")
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            # HNSW index for fast cosine similarity on knowledge_chunks
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_embedding "
+                "ON knowledge_chunks USING hnsw (embedding vector_cosine_ops)"
+            ))
+            # Composite index for per-user blueprint listings sorted by date
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_blueprints_user_created "
+                "ON blueprints (user_id, created_at DESC)"
+            ))
+        log.info("pgvector extension enabled and performance indexes created")
     except Exception:
         log.info("pgvector not available — knowledge base will use BM25 only")
 

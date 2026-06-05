@@ -14,7 +14,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from jose import JWTError, jwt
 from sqlalchemy import select
@@ -47,11 +47,14 @@ def create_jwt(user: User) -> str:
 
 
 def set_auth_cookie(response: Response, token: str) -> None:
+    cfg = _cfg()
+    # secure=True in production (HTTPS); False only in local dev (debug=True)
+    is_secure = not cfg.debug
     response.set_cookie(
         key="archon_session",
         value=token,
         httponly=True,
-        secure=False,
+        secure=is_secure,
         samesite="lax",
         max_age=JWT_EXPIRE_DAYS * 86400,
         path="/",
@@ -245,8 +248,14 @@ async def dev_login(response: Response, db: AsyncSession = Depends(get_db)):
     """Create (or fetch) a dev user and issue a JWT cookie.
 
     This endpoint is intended for local development when real OAuth
-    credentials are unavailable. It should NOT be exposed in production.
+    credentials are unavailable. It is blocked in production (debug=False).
     """
+    if not _cfg().debug:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not found.",
+        )
+
     dev_email    = "developer@archon.ai"
     dev_name     = "Dev User"
     dev_provider = "dev"

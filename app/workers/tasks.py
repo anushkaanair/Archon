@@ -102,7 +102,7 @@ async def _run_pipeline(
                 t.log_input({"query_id": query_id, "input_text": input_text[:200]})
 
                 # 1. Semantic analysis
-                detected = detect_tasks(input_text)
+                detected = await detect_tasks(input_text)
                 task_dicts = [
                     {"task": d.task, "confidence": d.confidence, "description": d.description}
                     for d in detected

@@ -55,7 +55,7 @@ async def analyze_endpoint(
             t.log_input({"input_text": body.input_text[:200]})  # Truncate for logging
 
             # Detect tasks
-            detected = detect_tasks(body.input_text)
+            detected = await detect_tasks(body.input_text)
 
             # Persist query
             query = Query(

@@ -94,13 +94,19 @@ const KEYWORD_TIPS = [
   },
 ];
 
+// Source: artificialanalysis.ai leaderboard (June 2026)
 const MODEL_GUIDE = [
-  { name: 'claude-haiku-4',  badge: '⚡ Fast',  cost: '$',    note: 'Best for chat & simple tasks'  },
-  { name: 'claude-sonnet-4', badge: '⭐ Top',   cost: '$$$',  note: 'Best overall balance'           },
-  { name: 'gpt-4o-mini',     badge: '💰 Cheap', cost: '$$',   note: 'OpenAI budget option'           },
-  { name: 'deepseek-r1',     badge: '🧠 Reason',cost: '$$',   note: 'Strong code & reasoning'       },
-  { name: 'llama-3.3-70b',   badge: '🌿 OSS',   cost: 'Free', note: 'Self-host = near-zero cost'    },
+  { name: 'claude-opus-4.8',    badge: '👑 #1',    cost: '$$$$', note: 'Quality index 61 — best overall',         color: '#5B00E8' },
+  { name: 'gpt-5.5',            badge: '⭐ #2',    cost: '$$$$', note: 'Quality index 60 — OpenAI flagship',      color: '#059669' },
+  { name: 'gemini-3.1-pro',     badge: '💎 Value', cost: '$$$',  note: 'Quality 57, ~60% cheaper than top tier',  color: '#2563EB' },
+  { name: 'gpt-4o',             badge: '🔥 Vision',cost: '$$$',  note: 'Vision + function calling, battle-tested', color: '#059669' },
+  { name: 'mercury-2',          badge: '⚡ Speed', cost: '$$',   note: '996 tokens/sec — fastest available',       color: '#D97706' },
+  { name: 'llama-4-scout',      badge: '🌿 OSS',   cost: 'Free', note: '10M token context, self-hostable',         color: '#059669' },
+  { name: 'deepseek-r1',        badge: '🧠 Reason',cost: '$$',   note: 'Strong reasoning & code, open weights',    color: '#D97706' },
+  { name: 'qwen3.5-0.8b',       badge: '💸 Micro', cost: '$',    note: '$0.01 / 1M tokens — ultra low cost',       color: '#7C3AED' },
+  { name: 'mistral-large-2',    badge: '🇪🇺 EU',   cost: '$$',   note: 'GDPR-native, European data residency',    color: '#7C3AED' },
 ];
+
 
 /* ─── Sub-components ────────────────────────────────────────────────────── */
 function ScoreBadge({ score, size = 'sm' }: { score: number | null | undefined; size?: 'sm' | 'xs' }) {
@@ -178,28 +184,31 @@ function LiveTipsPanel({ prompt }: { prompt: string }) {
           )}
         </div>
 
-        <div className="p-4 min-h-[160px]">
+        <div className="p-4">
           <AnimatePresence mode="popLayout">
             {activeTips.length === 0 ? (
-              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <p className="text-[11px] text-[#9CA3AF] leading-relaxed mb-4">
+              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2">
+                <p className="text-[11px] text-[#9CA3AF] leading-relaxed mb-3">
                   Start describing your product — insights appear as you type.
                 </p>
                 {[
-                  { icon: Brain, label: 'Detect AI tasks', desc: 'What your app needs to do' },
-                  { icon: Cpu, label: 'Score all models', desc: 'Cost · latency · quality rank' },
-                  { icon: Network, label: 'Design architecture', desc: 'Optimal stack diagram' },
-                  { icon: DollarSign, label: 'Estimate spend', desc: 'Real pricing, projected monthly' },
+                  { icon: Brain,      label: 'Detect AI tasks',    desc: 'What your app needs to do',         color: '#5B00E8' },
+                  { icon: Cpu,        label: 'Score all models',   desc: 'Cost · latency · quality rank',     color: '#2563EB' },
+                  { icon: Network,    label: 'Design architecture',desc: 'Optimal stack diagram',             color: '#059669' },
+                  { icon: DollarSign, label: 'Estimate spend',     desc: 'Real pricing, projected monthly',   color: '#D97706' },
+                  { icon: Star,       label: 'RAGAs evaluation',   desc: 'Measure quality automatically',     color: '#7C3AED' },
+                  { icon: Zap,        label: 'Latency projections',desc: 'P50 · P95 per component',           color: '#EF4444' },
                 ].map((step, i) => {
                   const StepIcon = step.icon;
                   return (
                     <motion.div key={step.label}
                       initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.07 }}
-                      className="flex items-center gap-3 py-1.5">
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{ background: 'rgba(91,0,232,0.07)', border: '1px solid rgba(91,0,232,0.12)' }}>
-                        <StepIcon className="w-3.5 h-3.5 text-[#5B00E8]" />
+                      transition={{ delay: i * 0.06 }}
+                      className="flex items-center gap-3 py-2 px-2 rounded-xl"
+                      style={{ background: 'rgba(91,0,232,0.02)' }}>
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ background: `${step.color}12`, border: `1px solid ${step.color}25` }}>
+                        <StepIcon className="w-3.5 h-3.5" style={{ color: step.color }} />
                       </div>
                       <div>
                         <p className="text-[11px] font-semibold text-[#374151]">{step.label}</p>
@@ -232,15 +241,21 @@ function LiveTipsPanel({ prompt }: { prompt: string }) {
         </div>
       </div>
 
+
       {/* Quick model reference */}
       <div className="rounded-2xl bg-white overflow-hidden"
         style={{ border: '1.5px solid rgba(91,0,232,0.1)', boxShadow: '0 2px 12px rgba(91,0,232,0.05)' }}>
-        <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(91,0,232,0.08)' }}>
-          <p className="text-[11px] font-bold text-[#374151]">⚡ Quick Model Guide</p>
+        <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(91,0,232,0.08)' }}>
+          <p className="text-[11px] font-bold text-[#374151]">⚡ Model Reference</p>
+          <a href="https://artificialanalysis.ai" target="_blank" rel="noopener noreferrer"
+             className="text-[9px] text-[#5B00E8] hover:underline opacity-70">
+            via artificialanalysis.ai ↗
+          </a>
         </div>
-        <div className="p-3 space-y-1.5">
+        <div className="p-2 space-y-1">
           {MODEL_GUIDE.map(m => (
-            <div key={m.name} className="flex items-center gap-2 px-2 py-1.5 rounded-lg" style={{ background: '#F9FAFB' }}>
+            <div key={m.name} className="flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-[#F9FAFB] transition-colors">
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: m.color }} />
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-mono font-bold text-[#374151] truncate">{m.name}</p>
                 <p className="text-[9px] text-[#9CA3AF]">{m.note}</p>
@@ -269,6 +284,7 @@ function LiveTipsPanel({ prompt }: { prompt: string }) {
           <p className="text-[12px] font-bold text-[#374151] group-hover:text-[#5B00E8] transition-colors">Visual Playground →</p>
           <p className="text-[10px] text-[#9CA3AF]">Build pipelines with drag & drop nodes</p>
         </div>
+        <ArrowRight className="w-3.5 h-3.5 text-[#9CA3AF] group-hover:text-[#5B00E8] transition-colors" />
       </Link>
     </div>
   );
