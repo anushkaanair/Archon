@@ -49,6 +49,14 @@ class ApiKey(Base):
         DateTime(timezone=True), nullable=True,
         doc="Timestamp of the most recent authenticated request with this key.",
     )
+    expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True,
+        doc="Optional expiry. Null = never expires. Enforced at auth time.",
+    )
+    scopes: Mapped[str] = mapped_column(
+        String(255), nullable=False, default="*", server_default="*",
+        doc="Comma-separated permission scopes. '*' = full access.",
+    )
 
     # ── Relationships ────────────────────────────────────────────
     user = relationship("User", back_populates="api_keys")
