@@ -89,8 +89,7 @@ async def architect_endpoint(
     # Run in a thread pool — keyword matching is CPU-bound and
     # would block the event loop if called directly in an async handler.
     try:
-        import asyncio
-        detected = await asyncio.to_thread(detect_tasks, body.input_text)
+        detected = await detect_tasks(body.input_text)
         task_dicts = [
             {"task": d.task, "confidence": d.confidence, "description": d.description}
             for d in detected

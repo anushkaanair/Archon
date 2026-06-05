@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Key, Shield, Copy, Check, Eye, EyeOff, User, Mail, LogOut,
   Plus, Database, ChevronDown, CheckCircle2, Sliders, Lock,
-  Sparkles, RefreshCw, AlertTriangle, Globe, Zap,
+  Sparkles, RefreshCw, AlertTriangle, Globe, Zap, Edit3,
+  Clock, TrendingUp, Award,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -110,6 +111,23 @@ export default function Settings() {
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<TabId>('profile');
+
+  /* profile form */
+  const [profileName, setProfileName]   = useState(user?.name || '');
+  const [profileEmail, setProfileEmail] = useState(user?.email || '');
+  const [profileBio, setProfileBio]     = useState('');
+  const [profileTz, setProfileTz]       = useState('UTC+0 — London');
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+
+  const saveProfile = async () => {
+    setProfileSaving(true);
+    // TODO: wire to PATCH /users/me once backend endpoint exists
+    await new Promise(r => setTimeout(r, 800));
+    setProfileSaving(false);
+    setProfileSaved(true);
+    setTimeout(() => setProfileSaved(false), 2500);
+  };
 
   /* preferences */
   const [latency, setLatency]         = useState(1500);
@@ -222,57 +240,157 @@ export default function Settings() {
 
             {/* ── PROFILE ── */}
             {activeTab === 'profile' && (
-              <motion.div key="profile" variants={section} initial="hidden" animate="show" exit="exit">
-                <h2 className="text-[22px] font-extrabold text-[#0D0D0D] mb-1">Profile</h2>
-                <p className="text-[13px] text-[#6B7280] mb-6">Your account information and identity</p>
+              <motion.div key="profile" variants={section} initial="hidden" animate="show" exit="exit" className="space-y-4">
+                <div>
+                  <h2 className="text-[22px] font-extrabold text-[#0D0D0D] mb-1">Profile</h2>
+                  <p className="text-[13px] text-[#6B7280]">Your account information and identity</p>
+                </div>
 
-                {/* Identity card */}
-                <div className="rounded-2xl overflow-hidden bg-white mb-4"
+                {/* Identity card — fixed alignment */}
+                <div className="rounded-2xl bg-white"
                   style={{ border: '1.5px solid rgba(91,0,232,0.12)', boxShadow: '0 4px 24px rgba(91,0,232,0.07)' }}>
-                  {/* Banner gradient */}
-                  <div className="h-20 w-full relative"
-                    style={{ background: 'linear-gradient(135deg, #5B00E8 0%, #7C3AED 50%, #C4A0FF 100%)' }}>
-                    <div className="absolute inset-0"
-                      style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.15) 0%, transparent 60%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 50%)' }} />
+                  {/* Banner */}
+                  <div className="h-24 w-full rounded-t-2xl relative"
+                    style={{ background: 'linear-gradient(135deg, #5B00E8 0%, #7C3AED 50%, #A78BFA 100%)' }}>
+                    <div className="absolute inset-0 rounded-t-2xl"
+                      style={{ backgroundImage: 'radial-gradient(circle at 15% 50%, rgba(255,255,255,0.18) 0%, transparent 55%), radial-gradient(circle at 85% 20%, rgba(255,255,255,0.12) 0%, transparent 45%)' }} />
                   </div>
-                  <div className="px-6 pb-6">
-                    <div className="flex items-end justify-between -mt-8 mb-4">
-                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-[26px] font-black text-white border-4 border-white"
-                        style={{ background: 'linear-gradient(135deg, #5B00E8, #7C3AED)', boxShadow: '0 4px 20px rgba(91,0,232,0.4)' }}>
+                  <div className="px-6 pb-5">
+                    {/* Avatar row — sits on the banner border */}
+                    <div className="flex items-end justify-between" style={{ marginTop: -28 }}>
+                      <div className="w-14 h-14 rounded-xl flex items-center justify-center text-[22px] font-black text-white"
+                        style={{ background: 'linear-gradient(135deg, #5B00E8, #7C3AED)', boxShadow: '0 4px 16px rgba(91,0,232,0.5)', border: '3px solid white' }}>
                         {initial}
                       </div>
-                      <span className="text-[11px] font-bold px-3 py-1 rounded-full mb-1"
-                        style={{ background: `${providerColor}15`, color: providerColor, border: `1.5px solid ${providerColor}30` }}>
-                        {providerLabel}
-                      </span>
+                      <div className="flex items-center gap-2 pb-1">
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full"
+                          style={{ background: `${providerColor}15`, color: providerColor, border: `1.5px solid ${providerColor}30` }}>
+                          {providerLabel}
+                        </span>
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full"
+                          style={{ background: 'rgba(5,150,105,0.1)', color: '#059669', border: '1.5px solid rgba(5,150,105,0.25)' }}>
+                          Free plan
+                        </span>
+                      </div>
                     </div>
-                    <h3 className="text-[20px] font-extrabold text-[#0D0D0D] leading-tight">
-                      {user?.name || 'User'}
-                    </h3>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <Mail className="w-3.5 h-3.5 text-[#9CA3AF]" />
-                      <p className="text-[13px] text-[#6B7280]">{user?.email || '—'}</p>
+                    <div className="mt-3">
+                      <h3 className="text-[18px] font-extrabold text-[#0D0D0D] leading-tight">{user?.name || 'User'}</h3>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <Mail className="w-3 h-3 text-[#9CA3AF]" />
+                        <p className="text-[12px] text-[#6B7280]">{user?.email || '—'}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Stats row */}
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-3">
                   {[
-                    { label: 'Plan',      value: 'Free',  icon: Sparkles, color: '#5B00E8' },
-                    { label: 'Blueprints', value: '12',   icon: Zap,       color: '#2563EB' },
-                    { label: 'API Calls',  value: '847',  icon: Globe,     color: '#059669' },
+                    { label: 'Blueprints',   value: '12',    icon: Zap,        color: '#5B00E8' },
+                    { label: 'API Calls',    value: '847',   icon: Globe,      color: '#2563EB' },
+                    { label: 'Models Used',  value: '9',     icon: TrendingUp, color: '#059669' },
+                    { label: 'Saved',        value: '4',     icon: Award,      color: '#D97706' },
                   ].map(stat => (
-                    <div key={stat.label} className="rounded-2xl p-4 bg-white"
+                    <div key={stat.label} className="rounded-2xl p-4 bg-white text-center"
                       style={{ border: '1.5px solid rgba(91,0,232,0.1)', boxShadow: '0 2px 12px rgba(91,0,232,0.05)' }}>
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#9CA3AF]">{stat.label}</p>
-                        <stat.icon className="w-3.5 h-3.5" style={{ color: stat.color }} strokeWidth={2} />
-                      </div>
-                      <p className="text-[20px] font-extrabold" style={{ color: stat.color }}>{stat.value}</p>
+                      <stat.icon className="w-4 h-4 mx-auto mb-2" style={{ color: stat.color }} strokeWidth={2} />
+                      <p className="text-[20px] font-extrabold leading-none" style={{ color: stat.color }}>{stat.value}</p>
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-[#9CA3AF] mt-1">{stat.label}</p>
                     </div>
                   ))}
                 </div>
+
+                {/* Edit profile */}
+                <div className="rounded-2xl bg-white"
+                  style={{ border: '1.5px solid rgba(91,0,232,0.12)', boxShadow: '0 4px 24px rgba(91,0,232,0.07)' }}>
+                  <div className="flex items-center gap-2 px-5 py-4" style={{ borderBottom: '1px solid rgba(91,0,232,0.08)' }}>
+                    <Edit3 className="w-3.5 h-3.5 text-[#5B00E8]" />
+                    <p className="text-[12px] font-bold text-[#374151]">Edit Profile</p>
+                  </div>
+                  <div className="p-5 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <TextField label="Display name" value={profileName} onChange={setProfileName} placeholder="Your name" />
+                      <TextField label="Email" value={profileEmail} onChange={setProfileEmail} type="email" placeholder="you@example.com" />
+                    </div>
+                    <div>
+                      <FieldLabel>Bio (optional)</FieldLabel>
+                      <textarea value={profileBio} onChange={e => setProfileBio(e.target.value)} placeholder="What are you building with Archon?"
+                        rows={2}
+                        className="w-full rounded-xl px-4 py-2.5 text-[13px] text-[#0D0D0D] outline-none resize-none transition-all"
+                        style={{ background: 'white', border: '1.5px solid rgba(91,0,232,0.18)' }}
+                        onFocus={focusIn} onBlur={focusOut} />
+                    </div>
+                    <SelectField label="Timezone" value={profileTz} onChange={setProfileTz}
+                      options={['UTC-8 — Pacific', 'UTC-5 — Eastern', 'UTC+0 — London', 'UTC+1 — Paris', 'UTC+5:30 — Mumbai', 'UTC+8 — Singapore', 'UTC+9 — Tokyo']} />
+                  </div>
+                  <div className="px-5 py-4" style={{ borderTop: '1px solid rgba(91,0,232,0.08)', background: '#FAFAFE' }}>
+                    <button onClick={saveProfile} disabled={profileSaving}
+                      className="flex items-center gap-2 h-9 px-5 rounded-xl text-[12px] font-bold text-white disabled:opacity-60 transition-opacity"
+                      style={{ background: 'linear-gradient(135deg, #5B00E8, #7C3AED)', boxShadow: '0 2px 12px rgba(91,0,232,0.3)' }}>
+                      {profileSaving ? (
+                        <><span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> Saving…</>
+                      ) : profileSaved ? (
+                        <><Check className="w-3.5 h-3.5" /> Saved!</>
+                      ) : (
+                        <><Check className="w-3.5 h-3.5" /> Save changes</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Recent activity */}
+                <div className="rounded-2xl bg-white"
+                  style={{ border: '1.5px solid rgba(91,0,232,0.12)', boxShadow: '0 4px 24px rgba(91,0,232,0.07)' }}>
+                  <div className="flex items-center gap-2 px-5 py-4" style={{ borderBottom: '1px solid rgba(91,0,232,0.08)' }}>
+                    <Clock className="w-3.5 h-3.5 text-[#5B00E8]" />
+                    <p className="text-[12px] font-bold text-[#374151]">Recent Activity</p>
+                  </div>
+                  <div className="divide-y" style={{ borderColor: 'rgba(91,0,232,0.06)' }}>
+                    {[
+                      { label: 'Blueprint generated', sub: 'Legal Q&A Bot — RAG + citation tracking', time: '2h ago', color: '#5B00E8', icon: Zap },
+                      { label: 'Blueprint generated', sub: 'Fraud Detection pipeline — real-time scoring', time: '1d ago', color: '#059669', icon: Zap },
+                      { label: 'API key accessed',    sub: 'arch_dev_*** from 192.168.x.x', time: '2d ago', color: '#D97706', icon: Key },
+                      { label: 'Blueprint saved',     sub: 'Customer Support Bot — multi-channel AI', time: '3d ago', color: '#2563EB', icon: Award },
+                    ].map((item, i) => {
+                      const Icon = item.icon;
+                      return (
+                        <div key={i} className="flex items-center gap-3 px-5 py-3">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                            style={{ background: `${item.color}10` }}>
+                            <Icon className="w-3.5 h-3.5" style={{ color: item.color }} strokeWidth={2} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[12px] font-semibold text-[#374151]">{item.label}</p>
+                            <p className="text-[10px] text-[#9CA3AF] truncate">{item.sub}</p>
+                          </div>
+                          <span className="text-[10px] text-[#9CA3AF] flex-shrink-0">{item.time}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Plan upgrade */}
+                <div className="rounded-2xl p-5 relative overflow-hidden"
+                  style={{ background: 'linear-gradient(135deg, #5B00E8 0%, #7C3AED 100%)', boxShadow: '0 8px 32px rgba(91,0,232,0.3)' }}>
+                  <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-20"
+                    style={{ background: 'radial-gradient(circle, white, transparent)', transform: 'translate(30%, -30%)' }} />
+                  <div className="flex items-center justify-between relative">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Sparkles className="w-4 h-4 text-white/80" />
+                        <p className="text-[11px] font-bold text-white/70 uppercase tracking-wider">Pro Plan</p>
+                      </div>
+                      <p className="text-[16px] font-extrabold text-white">Unlock unlimited blueprints</p>
+                      <p className="text-[11px] text-white/70 mt-0.5">1,000 req/min · priority support · team access</p>
+                    </div>
+                    <button className="flex-shrink-0 h-9 px-5 rounded-xl text-[12px] font-bold text-[#5B00E8] bg-white transition-all hover:scale-105"
+                      style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
+                      Upgrade →
+                    </button>
+                  </div>
+                </div>
+
               </motion.div>
             )}
 
