@@ -1,6 +1,9 @@
 # Archon — AI Systems Design Engine
 
 <div align="center">
+  <a href="https://github.com/anushkaanair/Archon/actions/workflows/ci.yml">
+    <img src="https://github.com/anushkaanair/Archon/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" />
+  </a>
   <img src="https://img.shields.io/badge/Status-Beta-7F77DD?style=flat-square&labelColor=0d0b18" />
   <img src="https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square&labelColor=0d0b18" />
   <img src="https://img.shields.io/badge/Frontend-React%20%2B%20TypeScript-61DAFB?style=flat-square&labelColor=0d0b18" />

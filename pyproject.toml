@@ -77,5 +77,29 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "RUF"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/db/migrations/*", "tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+fail_under = 60
+
+[tool.mypy]
+python_version = "3.11"
+strict_optional = true
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_return_any = false          # too noisy with third-party stubs
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["celery.*", "ragas.*", "langfuse.*", "pgvector.*", "rank_bm25.*"]
+ignore_missing_imports = true
+
 [tool.hatch.build.targets.wheel]
 packages = ['app']
