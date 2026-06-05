@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import ConfirmModal from '../components/ConfirmModal';
 
 /* ─── Shared styles ──────────────────────────────────────────────────────── */
 const inputCls = "w-full rounded-xl px-4 py-2.5 text-[13px] text-[#0D0D0D] outline-none transition-all";
@@ -137,6 +138,8 @@ export default function Settings() {
   /* api key */
   const [showKey, setShowKey]         = useState(false);
   const [keyCopied, setKeyCopied]     = useState(false);
+  const [showRevokeModal, setShowRevokeModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const devKey     = 'arch_dev_' + '•'.repeat(14) + 'j3q2';
   const devKeyFull = 'arch_dev_hk9xm2pq7r8sj3q2';
 
@@ -175,6 +178,7 @@ export default function Settings() {
   const initial = (user?.name || user?.email || 'U')[0].toUpperCase();
 
   return (
+    <>
     <div className="flex h-full min-h-0 overflow-hidden">
 
       {/* ── Left navigation ── */}
@@ -431,7 +435,9 @@ export default function Settings() {
                         {keyCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                         {keyCopied ? 'Copied!' : 'Copy'}
                       </button>
-                      <button className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-semibold ml-auto transition-all"
+                      <button
+                        onClick={() => setShowRevokeModal(true)}
+                        className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-semibold ml-auto transition-all"
                         style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#EF4444' }}
                         onMouseEnter={e => { (e.currentTarget).style.background = 'rgba(239,68,68,0.18)'; }}
                         onMouseLeave={e => { (e.currentTarget).style.background = 'rgba(239,68,68,0.1)'; }}>
@@ -647,10 +653,11 @@ export default function Settings() {
                         <p className="text-[13px] font-semibold text-[#0D0D0D]">Delete account</p>
                         <p className="text-[11px] text-[#9CA3AF]">Permanently delete all data. This cannot be undone.</p>
                       </div>
-                      <button disabled
-                        className="flex items-center gap-2 h-9 px-4 rounded-xl text-[12px] font-semibold opacity-40 cursor-not-allowed"
+                      <button
+                        onClick={() => setShowDeleteModal(true)}
+                        className="flex items-center gap-2 h-9 px-4 rounded-xl text-[12px] font-semibold"
                         style={{ background: 'rgba(239,68,68,0.06)', border: '1.5px solid rgba(239,68,68,0.2)', color: '#EF4444' }}>
-                        Delete
+                        Delete account
                       </button>
                     </div>
                   </div>
@@ -662,5 +669,35 @@ export default function Settings() {
         </div>
       </div>
     </div>
+
+    {/* ── Confirmation modals ─────────────────────────────────────────── */}
+    <ConfirmModal
+      open={showRevokeModal}
+      title="Regenerate API key?"
+      message="Your current key will be permanently revoked. Any apps or scripts using it will stop working immediately. You'll receive a new key to replace it."
+      confirmLabel="Regenerate key"
+      danger
+      onConfirm={() => {
+        // TODO: call POST /api_keys/regenerate once backend endpoint exists
+        setShowRevokeModal(false);
+      }}
+      onCancel={() => setShowRevokeModal(false)}
+    />
+
+    <ConfirmModal
+      open={showDeleteModal}
+      title="Delete your account?"
+      message="This will permanently delete your account, all blueprints, and API keys. This action cannot be undone. We can't recover your data after deletion."
+      confirmLabel="Delete my account"
+      cancelLabel="Keep account"
+      danger
+      onConfirm={() => {
+        // TODO: call DELETE /users/me once backend endpoint exists
+        setShowDeleteModal(false);
+        logout();
+      }}
+      onCancel={() => setShowDeleteModal(false)}
+    />
+    </>
   );
 }

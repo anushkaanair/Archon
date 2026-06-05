@@ -12,6 +12,7 @@ import NotFound from './pages/NotFound';
 
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/layout/ProtectedRoute';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
 const router = createBrowserRouter([
   { path: '/', element: <Home /> },
@@ -22,14 +23,13 @@ const router = createBrowserRouter([
       {
         element: <SidebarLayout />,
         children: [
-          { path: '/dashboard',      element: <Dashboard /> },
-          { path: '/builder',        element: <Builder /> },      // Blueprint Builder form
-          { path: '/analytics',      element: <Analytics /> },
-          { path: '/playground',     element: <Playground /> },   // Visual node editor
-          { path: '/settings',       element: <Settings /> },
-          { path: '/blueprints/:id', element: <BlueprintDetail /> },
-          // Legacy redirect support
-          { path: '/blueprint',      element: <Builder /> },
+          { path: '/dashboard',      element: <ErrorBoundary><Dashboard /></ErrorBoundary> },
+          { path: '/builder',        element: <ErrorBoundary><Builder /></ErrorBoundary> },
+          { path: '/analytics',      element: <ErrorBoundary><Analytics /></ErrorBoundary> },
+          { path: '/playground',     element: <ErrorBoundary><Playground /></ErrorBoundary> },
+          { path: '/settings',       element: <ErrorBoundary><Settings /></ErrorBoundary> },
+          { path: '/blueprints/:id', element: <ErrorBoundary><BlueprintDetail /></ErrorBoundary> },
+          { path: '/blueprint',      element: <ErrorBoundary><Builder /></ErrorBoundary> },
         ],
       },
     ],
