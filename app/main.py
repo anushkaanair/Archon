@@ -135,6 +135,21 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     _validate_env()
 
     settings = get_settings()
+
+    # ── Sentry error tracking (no-op when SENTRY_DSN is empty) ───
+    if settings.sentry_dsn:
+        try:
+            import sentry_sdk
+            sentry_sdk.init(
+                dsn=settings.sentry_dsn,
+                traces_sample_rate=0.1,
+                environment="development" if settings.debug else "production",
+                release=f"archon@{settings.app_version}",
+            )
+            log.info("Sentry initialised")
+        except ImportError:
+            log.warning("sentry-sdk not installed — error tracking disabled")
+
     log.info("Archon starting", version=settings.app_version)
 
     # ── Database ──────────────────────────────────────────────────
@@ -240,16 +255,64 @@ def create_app() -> FastAPI:
     app.include_router(v1_router)
     app.include_router(auth_router)
 
-    # ── Health check ─────────────────────────────────────────────
+    # ── Health check (shallow — just confirms process is alive) ──
     @app.get(
         "/health",
         response_model=HealthResponse,
         tags=["Health"],
-        summary="Health check",
+        summary="Shallow health check",
     )
     async def health() -> HealthResponse:
         """Return service health status and version."""
         return HealthResponse(status="ok", version=settings.app_version)
+
+    # ── Readiness check (deep — verifies all dependencies) ───────
+    @app.get(
+        "/readyz",
+        tags=["Health"],
+        summary="Deep readiness probe — checks postgres, redis, and LLM",
+    )
+    async def readyz(request: Request) -> JSONResponse:
+        """Verify that all external dependencies are reachable.
+
+        Returns 200 when everything is ok, 503 when any critical dependency
+        is down. Used by Railway's health check and load balancer.
+        """
+        checks: dict[str, str] = {}
+
+        # PostgreSQL
+        try:
+            from app.db.session import engine
+            from sqlalchemy import text as sql_text
+            async with engine.connect() as conn:
+                await conn.execute(sql_text("SELECT 1"))
+            checks["postgres"] = "ok"
+        except Exception as exc:
+            checks["postgres"] = f"error: {exc}"
+
+        # Redis
+        try:
+            redis = getattr(request.app.state, "redis", None)
+            if redis:
+                await redis.ping()
+                checks["redis"] = "ok"
+            else:
+                checks["redis"] = "not configured"
+        except Exception as exc:
+            checks["redis"] = f"error: {exc}"
+
+        # LLM key presence
+        checks["llm"] = (
+            "ok"
+            if (settings.google_api_key or settings.openai_api_key or settings.anthropic_api_key)
+            else "no API key configured"
+        )
+
+        all_ok = all(v in ("ok", "not configured") for v in checks.values())
+        return JSONResponse(
+            {"status": "ok" if all_ok else "degraded", "checks": checks},
+            status_code=200 if all_ok else 503,
+        )
 
     # ── Global exception handler ─────────────────────────────────
     @app.exception_handler(Exception)

@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     github_client_id: str = ""
     github_client_secret: str = ""
 
+    # ── Observability ─────────────────────────────────────────────
+    sentry_dsn: str = ""  # Leave empty to disable Sentry
+
     # ── Rate Limiting (requests per minute) ──────────────────────
     rate_limit_free: int = 100
     rate_limit_pro: int = 1000

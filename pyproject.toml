@@ -48,6 +48,7 @@ dependencies = [
 
     # Observability
     "langfuse>=2.56.0",
+    "sentry-sdk[fastapi]>=2.0.0",
 
     # Utilities
     "python-multipart>=0.0.18",

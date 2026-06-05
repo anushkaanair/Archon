@@ -23,7 +23,7 @@ class ArchitectRequest(BaseModel):
     input_text: str = Field(
         ...,
         min_length=10,
-        max_length=5000,
+        max_length=8000,
         description="Natural-language product idea to generate a full blueprint for.",
         examples=["An AI-powered code review tool that catches security vulnerabilities in real-time."],
     )

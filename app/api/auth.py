@@ -9,6 +9,7 @@ Flow:
 
 from __future__ import annotations
 
+import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
@@ -96,10 +97,11 @@ async def upsert_user(db: AsyncSession, email: str, name: str | None,
 # ── Google OAuth ──────────────────────────────────────────────────────────────
 
 @router.get("/google")
-async def google_redirect():
+async def google_redirect(response: Response):
     cfg = _cfg()
     if not cfg.google_client_id:
         raise HTTPException(status_code=501, detail="Google OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.")
+    state = secrets.token_urlsafe(32)
     params = {
         "client_id": cfg.google_client_id,
         "redirect_uri": f"{cfg.backend_url}/auth/google/callback",
@@ -107,13 +109,29 @@ async def google_redirect():
         "scope": "openid email profile",
         "access_type": "offline",
         "prompt": "select_account",
+        "state": state,
     }
-    return RedirectResponse(f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}")
+    redirect = RedirectResponse(f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}")
+    redirect.set_cookie(
+        "oauth_state", state,
+        httponly=True, secure=not cfg.debug, samesite="lax", max_age=600,
+    )
+    return redirect
 
 
 @router.get("/google/callback")
-async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
+async def google_callback(
+    code: str,
+    state: str | None = None,
+    request: Request = None,  # type: ignore[assignment]
+    db: AsyncSession = Depends(get_db),
+):
     cfg = _cfg()
+    # CSRF state validation
+    if request is not None:
+        stored_state = request.cookies.get("oauth_state")
+        if not stored_state or stored_state != state:
+            return RedirectResponse(f"{cfg.frontend_url}/login?error=csrf_failed")
     async with httpx.AsyncClient() as client:
         token_res = await client.post("https://oauth2.googleapis.com/token", data={
             "code": code,
@@ -150,21 +168,38 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
 # ── GitHub OAuth ──────────────────────────────────────────────────────────────
 
 @router.get("/github")
-async def github_redirect():
+async def github_redirect(response: Response):
     cfg = _cfg()
     if not cfg.github_client_id:
         raise HTTPException(status_code=501, detail="GitHub OAuth not configured. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET.")
+    state = secrets.token_urlsafe(32)
     params = {
         "client_id": cfg.github_client_id,
         "redirect_uri": f"{cfg.backend_url}/auth/github/callback",
         "scope": "read:user user:email",
+        "state": state,
     }
-    return RedirectResponse(f"https://github.com/login/oauth/authorize?{urlencode(params)}")
+    redirect = RedirectResponse(f"https://github.com/login/oauth/authorize?{urlencode(params)}")
+    redirect.set_cookie(
+        "oauth_state", state,
+        httponly=True, secure=not cfg.debug, samesite="lax", max_age=600,
+    )
+    return redirect
 
 
 @router.get("/github/callback")
-async def github_callback(code: str, db: AsyncSession = Depends(get_db)):
+async def github_callback(
+    code: str,
+    state: str | None = None,
+    request: Request = None,  # type: ignore[assignment]
+    db: AsyncSession = Depends(get_db),
+):
     cfg = _cfg()
+    # CSRF state validation
+    if request is not None:
+        stored_state = request.cookies.get("oauth_state")
+        if not stored_state or stored_state != state:
+            return RedirectResponse(f"{cfg.frontend_url}/login?error=csrf_failed")
     async with httpx.AsyncClient() as client:
         token_res = await client.post(
             "https://github.com/login/oauth/access_token",
