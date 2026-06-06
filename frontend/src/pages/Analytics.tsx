@@ -90,8 +90,8 @@ export default function Analytics() {
       {/* ── Header ── */}
       <div className="relative rounded-2xl overflow-hidden px-8 py-8"
         style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.06) 0%, #ffffff 70%)', border: '1.5px solid rgba(91,0,232,0.15)', boxShadow: '0 4px 24px rgba(91,0,232,0.07)' }}>
-        <div className="absolute top-0 right-1/4 w-80 h-32 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse, rgba(91,0,232,0.1) 0%, transparent 70%)' }} />
+        <div className="absolute -top-24 -right-24 w-72 h-72 pointer-events-none rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(91,0,232,0.08) 0%, transparent 65%)' }} />
         <div className="relative">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center"
@@ -108,6 +108,28 @@ export default function Analytics() {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-6 h-6 text-[#5B00E8] animate-spin" />
+        </div>
+      ) : !stats || (stats.total_blueprints === 0 && blueprints.length === 0) ? (
+        /* ── Empty state for new users ── */
+        <div className="flex flex-col items-center justify-center py-24 gap-6 text-center">
+          <div className="w-20 h-20 rounded-3xl flex items-center justify-center"
+            style={{ background: 'rgba(91,0,232,0.07)', border: '1.5px solid rgba(91,0,232,0.15)' }}>
+            <BarChart3 className="w-10 h-10 text-[#5B00E8]" strokeWidth={1.5} />
+          </div>
+          <div className="max-w-sm">
+            <h2 className="text-[20px] font-bold text-[#0D0D0D] mb-2">No analytics yet</h2>
+            <p className="text-[13px] text-[#6B7280] leading-relaxed">
+              Analytics appear automatically after your first blueprint. Run the Builder on any AI product idea and your cost, latency, and quality data will show here.
+            </p>
+          </div>
+          <a
+            href="/builder"
+            className="flex items-center gap-2 h-10 px-7 rounded-xl text-[13px] font-semibold text-white transition-all"
+            style={{ background: '#5B00E8', boxShadow: '0 2px 16px rgba(91,0,232,0.35)' }}
+          >
+            <TrendingUp className="w-4 h-4" />
+            Generate your first blueprint
+          </a>
         </div>
       ) : (
         <>

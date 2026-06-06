@@ -67,17 +67,17 @@ export default function NotFound() {
           </button>
         </motion.div>
 
-        {/* Decorative dots */}
+        {/* Helpful links */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
-          className="mt-12 flex justify-center gap-2">
-          {[0.5, 1, 0.5].map((op, i) => (
-            <div key={i}
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ background: '#5B00E8', opacity: op }} />
-          ))}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.55, duration: 0.4 }}
+          className="mt-10 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[12px]">
+          <span className="text-[#9CA3AF]">Were you looking for —</span>
+          <Link to="/builder"    className="font-medium text-[#5B00E8] hover:underline">Builder</Link>
+          <Link to="/analytics"  className="font-medium text-[#5B00E8] hover:underline">Analytics</Link>
+          <Link to="/playground" className="font-medium text-[#5B00E8] hover:underline">Playground</Link>
+          <Link to="/settings"   className="font-medium text-[#5B00E8] hover:underline">Settings</Link>
         </motion.div>
       </div>
     </div>

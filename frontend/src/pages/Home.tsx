@@ -1,20 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Play, ChevronRight, CheckCircle } from 'lucide-react';
+import { ArrowRight, ChevronRight, CheckCircle, X, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-
-/* ─── Logo ─────────────────────────────────────────────────────────────────── */
-const ArchonMark = ({ size = 24 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 28 28" fill="none">
-    <polygon points="14,2 24,10 14,18 4,10" fill="#5B00E8" />
-    <polygon points="14,2 4,10 14,10"  fill="#1A0050" />
-    <polygon points="14,2 24,10 14,10" fill="#8B3DFF" />
-    <polygon points="4,10 14,18 14,10" fill="#2D0070" />
-    <polygon points="24,10 14,18 14,10" fill="#C4A0FF" />
-    <circle cx="14" cy="10" r="2.5" fill="#EDE5FF" opacity="0.7" />
-  </svg>
-);
+import ArchonMark from '../components/ui/ArchonMark';
 
 /* ─── Typewriter terminal ───────────────────────────────────────────────────── */
 const PROMPTS = [
@@ -35,11 +24,12 @@ const PIPELINE_STAGES = [
   { id: 'ragas_evaluation',  label: 'ragas_evaluation',  ms: '408 ms' },
 ];
 
+// Illustrative ranking — your dashboard pulls live scores at generation time.
 const MODEL_SCORES = [
-  { name: 'Claude Sonnet 4',  score: 96, bar: '96%' },
-  { name: 'GPT-4o',           score: 93, bar: '93%' },
-  { name: 'Gemini 2.0 Flash', score: 88, bar: '88%' },
-  { name: 'Mistral Large 2',  score: 81, bar: '81%' },
+  { name: 'Claude Opus 4.5',     score: 92, bar: '92%' },
+  { name: 'GPT-4o',              score: 89, bar: '89%' },
+  { name: 'Gemini 2.5 Pro',      score: 87, bar: '87%' },
+  { name: 'DeepSeek V3',         score: 81, bar: '81%' },
 ];
 
 function Terminal() {
@@ -117,7 +107,7 @@ function Terminal() {
                 className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
                 style={{
                   background: stageIdx === i && !showScores ? 'rgba(217,119,6,0.15)' : 'rgba(0,168,84,0.12)',
-                  color: stageIdx === i && !showScores ? '#D97706' : '#00A854',
+                  color: stageIdx === i && !showScores ? '#D97706' : '#059669',
                 }}
               >
                 {stageIdx === i && !showScores ? 'RUN' : ' OK'}
@@ -153,10 +143,10 @@ function Terminal() {
         {showResult && (
           <div
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
-            style={{ background: 'rgba(0,168,84,0.08)', border: '1px solid rgba(0,168,84,0.2)' }}
+            style={{ background: 'rgba(5,150,105,0.08)', border: '1px solid rgba(5,150,105,0.2)' }}
           >
-            <span className="text-[#00A854] text-[11px] font-semibold">✓ blueprint complete</span>
-            <span className="text-white/30 text-[10px] ml-auto">est. $0.60/mo · p95 4.1 s · score 0.94</span>
+            <span className="text-[11px] font-semibold" style={{ color: 'var(--green)' }}>✓ blueprint complete</span>
+            <span className="text-white/30 text-[10px] ml-auto">architecture · cost · latency ready</span>
           </div>
         )}
       </div>
@@ -166,28 +156,29 @@ function Terminal() {
         className="flex items-center justify-between px-5 py-2.5 text-[10px] border-t border-white/[0.06]"
         style={{ background: 'rgba(255,255,255,0.015)' }}
       >
-        <span className="text-white/25">claude-sonnet-4  ·  200K ctx</span>
+        <span className="text-white/25">archon pipeline runner</span>
         <span style={{ color: '#5B00E8' }}>archon v0.1</span>
-        <span className="text-white/25">confidence: 0.94</span>
+        <span className="text-white/25">live · 6 stages</span>
       </div>
     </div>
   );
 }
 
 /* ─── Marquee chips ─────────────────────────────────────────────────────────── */
+// Real model identifiers Archon ranks at generation time. No fabricated benchmarks.
 const MARQUEE_ITEMS = [
-  { label: 'Claude Sonnet 4', value: '96% match', color: '#5B00E8' },
-  { label: 'P95 Latency',     value: '4.1 s',     color: '#D97706' },
-  { label: 'Monthly Cost',    value: '$0.60',      color: '#00A854' },
-  { label: 'RAGAs Score',     value: '0.94',       color: '#5B00E8' },
-  { label: 'GPT-4o',          value: '93% match',  color: '#5B00E8' },
-  { label: 'Context Window',  value: '200 K',      color: '#D97706' },
-  { label: 'DeepSeek R1',     value: '87% match',  color: '#5B00E8' },
-  { label: 'Blueprint',       value: '4.1 s',      color: '#D97706' },
-  { label: 'Gemini 2 Flash',  value: '88% match',  color: '#5B00E8' },
-  { label: 'Mistral Large',   value: '81% match',  color: '#5B00E8' },
-  { label: 'Models Scored',   value: '24+',        color: '#5B00E8' },
-  { label: 'Faithfulness',    value: '0.91',       color: '#00A854' },
+  { label: 'Claude Opus 4.5',  value: 'Top quality',  color: '#5B00E8' },
+  { label: 'GPT-4o',           value: 'Vision + fn',  color: '#059669' },
+  { label: 'Gemini 2.5 Pro',   value: '2M context',   color: '#2563EB' },
+  { label: 'Claude Sonnet 4.5',value: 'Best value',   color: '#5B00E8' },
+  { label: 'Llama 3.3 70B',    value: 'Open weights', color: '#059669' },
+  { label: 'DeepSeek V3',      value: 'Low cost',     color: '#7C3AED' },
+  { label: 'Gemini 2.0 Flash', value: 'Fast & cheap', color: '#D97706' },
+  { label: 'Mistral Large 2',  value: 'EU residency', color: '#2563EB' },
+  { label: 'GPT-4.1',          value: 'Long context', color: '#059669' },
+  { label: 'RAGAs Eval',       value: '6 metrics',    color: '#5B00E8' },
+  { label: 'Hybrid RAG',       value: 'BM25 + Dense', color: '#D97706' },
+  { label: 'Architecture',     value: 'Mermaid.js',   color: '#5B00E8' },
 ];
 
 /* ─── How It Works steps ────────────────────────────────────────────────────── */
@@ -248,11 +239,87 @@ function FadeIn({ children, className = '', delay = 0 }: { children: React.React
   );
 }
 
+/* ─── Demo modal — "coming soon" placeholder ────────────────────────────────── */
+// Replace this component with a real YouTube embed once the demo video is recorded.
+// Set DEMO_VIDEO_ID to the YouTube video ID and swap DemoModal back to an iframe.
+
+function DemoModal({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <AnimatePresence>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+        {/* Backdrop */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+          onClick={onClose}
+        />
+        {/* Dialog */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.94, y: 16 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.94, y: 8 }}
+          transition={{ duration: 0.22 }}
+          className="relative z-10 w-full max-w-lg"
+        >
+          <button
+            onClick={onClose}
+            className="absolute -top-10 right-0 flex items-center gap-1.5 text-white/60 hover:text-white text-[13px] font-medium transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" /> Close
+          </button>
+          <div
+            className="rounded-2xl p-10 text-center"
+            style={{ background: '#0F0F1A', border: '1px solid rgba(91,0,232,0.3)' }}
+          >
+            {/* Camera icon */}
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
+              style={{ background: 'rgba(91,0,232,0.15)', border: '1.5px solid rgba(91,0,232,0.3)' }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8B3DFF" strokeWidth="1.8">
+                <polygon points="23 7 16 12 23 17 23 7" />
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+              </svg>
+            </div>
+            <h3
+              style={{ fontFamily: 'Bricolage Grotesque, sans-serif', fontWeight: 800, fontSize: 22, color: '#fff', marginBottom: 12 }}
+            >
+              Demo coming soon
+            </h3>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, lineHeight: 1.6, marginBottom: 28 }}>
+              We're recording a full walkthrough of the Builder, Playground,
+              and report generator. In the meantime, sign up and try it live —
+              it only takes 30 seconds.
+            </p>
+            <button
+              onClick={onClose}
+              className="inline-flex items-center gap-2 h-11 px-8 rounded-xl font-bold text-[14px] transition-all"
+              style={{ background: '#5B00E8', color: '#fff', boxShadow: '0 4px 20px rgba(91,0,232,0.4)' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#4800BA'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#5B00E8'; }}
+            >
+              Try it now →
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
+}
+
 /* ─── Main ──────────────────────────────────────────────────────────────────── */
 export default function Home() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [activeStep, setActiveStep] = useState(0);
   const [navScrolled, setNavScrolled] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setNavScrolled(window.scrollY > 20);
@@ -263,6 +330,8 @@ export default function Home() {
   const duplicated = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS];
 
   return (
+    <>
+    {showDemo && <DemoModal onClose={() => setShowDemo(false)} />}
     <div className="page-light min-h-screen overflow-x-hidden" style={{ fontFamily: 'Inter, sans-serif' }}>
 
       {/* ─── Nav ─────────────────────────────────────────────────────────────── */}
@@ -283,56 +352,42 @@ export default function Home() {
             </span>
           </div>
 
-          {/* Links */}
+          {/* Links — only anchor to real sections on this page */}
           <div className="hidden md:flex items-center gap-8">
-            {['Features', 'What you get', 'How it works', 'Docs'].map(l => (
+            {[
+              { label: 'Features',     href: '#features' },
+              { label: 'What you get', href: '#what-you-get' },
+              { label: 'How it works', href: '#how-it-works' },
+            ].map(({ label, href }) => (
               <a
-                key={l}
-                href={`#${l.toLowerCase().replace(/ /g, '-')}`}
-                className="text-[13px] font-medium transition-colors"
+                key={label}
+                href={href}
+                className="text-[13px] font-medium transition-colors hover:text-[#5B00E8] focus-visible:text-[#5B00E8]"
                 style={{ color: 'rgba(10,0,37,0.5)' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#5B00E8')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(10,0,37,0.5)')}
               >
-                {l}
+                {label}
               </a>
             ))}
           </div>
 
-          {/* Auth */}
-          <div className="flex items-center gap-3">
-            {isAuthenticated ? (
-              <>
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold text-white"
-                  style={{ background: 'linear-gradient(135deg,#5B00E8,#8B3DFF)' }}
-                >
-                  {(user?.name || user?.email || 'A')[0].toUpperCase()}
-                </div>
-                <Link
-                  to="/dashboard"
-                  className="btn-violet h-9 px-4 text-[13px] rounded-lg"
-                >
-                  Dashboard
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="text-[13px] font-medium transition-colors"
-                  style={{ color: 'rgba(10,0,37,0.6)' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = '#5B00E8')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'rgba(10,0,37,0.6)')}
-                >
-                  Sign in
-                </Link>
-                <Link to="/login" className="btn-violet h-9 px-4 text-[13px] rounded-lg">
-                  Get started
-                </Link>
-              </>
-            )}
-          </div>
+          {/* Auth — single user-icon button. Click takes you to dashboard if signed in, OAuth login if not. */}
+          <Link
+            to={isAuthenticated ? '/dashboard' : '/login'}
+            aria-label={isAuthenticated ? 'Open dashboard' : 'Sign in'}
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-all"
+            style={{
+              background: isAuthenticated
+                ? 'linear-gradient(135deg,#5B00E8,#8B3DFF)'
+                : 'rgba(91,0,232,0.08)',
+              border: isAuthenticated ? 'none' : '1.5px solid rgba(91,0,232,0.2)',
+              boxShadow: isAuthenticated ? '0 2px 12px rgba(91,0,232,0.3)' : 'none',
+              color: isAuthenticated ? 'white' : '#5B00E8',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.05)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; }}
+          >
+            <UserIcon className="w-4 h-4" strokeWidth={2} />
+          </Link>
         </div>
       </nav>
 
@@ -394,48 +449,34 @@ export default function Home() {
               transition={{ duration: 0.6, delay: 0.3 }}
               className="flex items-center gap-3 mt-8"
             >
-              <Link to="/login" className="btn-violet h-11 px-6 text-[14px] rounded-lg flex items-center gap-2">
-                Start building free <ArrowRight className="w-4 h-4" />
+              <Link
+                to={isAuthenticated ? '/builder' : '/login'}
+                className="btn-violet h-11 px-6 text-[14px] rounded-lg flex items-center gap-2"
+              >
+                {isAuthenticated ? 'Open Builder' : 'Start building free'} <ArrowRight className="w-4 h-4" />
               </Link>
               <a
                 href="#how-it-works"
                 className="btn-outline h-11 px-6 text-[14px] rounded-lg flex items-center gap-2"
+                aria-label="See how it works"
               >
-                <Play className="w-3.5 h-3.5" style={{ fill: '#5B00E8' }} />
-                Watch demo
+                See how it works <ChevronRight className="w-4 h-4" />
               </a>
             </motion.div>
 
-            {/* Social proof */}
+            {/* Social proof — capability chips only, no fake counts */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.45 }}
-              className="mt-8 space-y-4"
+              className="mt-8"
             >
-              {/* Avatars + user count */}
-              <div className="flex items-center gap-3">
-                <div className="flex -space-x-2">
-                  {['#5B00E8','#2563EB','#059669','#D97706','#EF4444'].map((c, i) => (
-                    <div key={i}
-                      className="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold text-white"
-                      style={{ background: c, zIndex: 5 - i }}>
-                      {['A','K','M','J','R'][i]}
-                    </div>
-                  ))}
-                </div>
-                <p className="text-[12px]" style={{ color: 'rgba(10,0,37,0.5)' }}>
-                  <span style={{ fontWeight: 700, color: '#0A0025' }}>2,400+</span> engineers already building
-                </p>
-              </div>
-
-              {/* Stats pills */}
               <div className="flex flex-wrap gap-2">
                 {[
-                  { v: '18.5K', l: 'blueprints generated' },
-                  { v: '30+', l: 'models scored' },
-                  { v: '4.1s', l: 'avg generation' },
-                  { v: '$0.60', l: 'est/mo' },
+                  { v: '47+',        l: 'models ranked' },
+                  { v: '6-stage',   l: 'pipeline analysis' },
+                  { v: 'RAGAs',     l: 'quality evaluation' },
+                  { v: 'Mermaid',   l: 'architecture diagram' },
                 ].map(p => (
                   <div
                     key={p.l}
@@ -586,7 +627,7 @@ export default function Home() {
                   </div>
                   <div
                     className="mt-4 flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium"
-                    style={{ background: 'rgba(0,168,84,0.06)', border: '1px solid rgba(0,168,84,0.2)', color: '#00A854' }}
+                    style={{ background: 'rgba(0,168,84,0.06)', border: '1px solid rgba(0,168,84,0.2)', color: '#059669' }}
                   >
                     <CheckCircle className="w-4 h-4" />
                     Claude Sonnet 4 — highest score for your use case
@@ -669,7 +710,7 @@ export default function Home() {
                     <div key={s.label} className="flex items-center justify-between">
                       <div>
                         <p className="text-[11px] font-medium" style={{ color: 'rgba(10,0,37,0.4)' }}>{s.label}</p>
-                        <p style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 20, fontWeight: 600, color: s.amber ? '#D97706' : '#00A854' }}>{s.value}</p>
+                        <p style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 20, fontWeight: 600, color: s.amber ? '#D97706' : '#059669' }}>{s.value}</p>
                         <p className="text-[10px]" style={{ color: 'rgba(10,0,37,0.35)' }}>{s.sub}</p>
                       </div>
                     </div>
@@ -677,7 +718,7 @@ export default function Home() {
                 </div>
                 <div
                   className="mt-5 flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium"
-                  style={{ background: 'rgba(0,168,84,0.06)', border: '1px solid rgba(0,168,84,0.15)', color: '#00A854' }}
+                  style={{ background: 'rgba(0,168,84,0.06)', border: '1px solid rgba(0,168,84,0.15)', color: '#059669' }}
                 >
                   <CheckCircle className="w-3.5 h-3.5" />
                   Cheapest with highest score
@@ -689,8 +730,8 @@ export default function Home() {
       </section>
 
       {/* ─── How It Works ────────────────────────────────────────────────────── */}
-      <section id="how-it-works" className="py-28" style={{ background: 'var(--bg2)' }}>
-        <div className="absolute left-0 right-0 bg-grid-light opacity-40 pointer-events-none" style={{ height: '100%', position: 'absolute' }} />
+      <section id="how-it-works" className="py-28 relative" style={{ background: 'var(--bg2)' }}>
+        <div className="absolute inset-0 bg-grid-light opacity-40 pointer-events-none" />
         <div className="max-w-7xl mx-auto px-6 relative">
           <FadeIn className="text-center mb-16">
             <div
@@ -768,7 +809,7 @@ export default function Home() {
                           className="text-[10px] font-semibold px-1.5 py-0.5 rounded w-[38px] text-center"
                           style={{
                             background: status === 'done' ? 'rgba(0,168,84,0.12)' : status === 'active' ? 'rgba(217,119,6,0.15)' : 'rgba(255,255,255,0.04)',
-                            color: status === 'done' ? '#00A854' : status === 'active' ? '#D97706' : 'rgba(255,255,255,0.2)',
+                            color: status === 'done' ? '#059669' : status === 'active' ? '#D97706' : 'rgba(255,255,255,0.2)',
                           }}
                         >
                           {status === 'done' ? ' OK' : status === 'active' ? 'RUN' : ' --'}
@@ -797,7 +838,7 @@ export default function Home() {
       </section>
 
       {/* ─── Features strip ─────────────────────────────────────────────────── */}
-      <section className="py-20" style={{ background: '#fff' }}>
+      <section id="features" className="py-20" style={{ background: '#fff' }}>
         <div className="max-w-7xl mx-auto px-6">
           <FadeIn className="text-center mb-12">
             <p className="text-[11px] font-bold uppercase tracking-widest mb-4" style={{ color: '#5B00E8' }}>Everything in one tool</p>
@@ -885,17 +926,9 @@ export default function Home() {
           <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>
             © 2026 Archon Intelligence Platforms
           </p>
-          <div className="flex gap-5">
-            {['Privacy', 'Terms', 'API Docs'].map(l => (
-              <a key={l} href="#" className="text-[12px] transition-colors" style={{ color: 'rgba(255,255,255,0.3)' }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}>
-                {l}
-              </a>
-            ))}
-          </div>
         </div>
       </footer>
     </div>
+    </>
   );
 }
