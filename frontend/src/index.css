@@ -12,13 +12,41 @@
   --violet:      #5B00E8;
   --violet-lt:   #EDE5FF;
   --violet-deep: #0A0025;
-  --green:       #00A854;
+
+  /* ── Single canonical colour tokens ──────────────────────────────────────
+     Use ONLY these in components — do not reach for Tailwind green-600
+     (#059669) or any other shade. This eliminates the dual-green problem.  */
+  --green:       #059669;   /* was #00A854 — unified to Tailwind green-600  */
   --amber:       #D97706;
-  --dark:        #0D0D0D;
-  --card-border: rgba(91,0,232,0.12);
+  --red:         #EF4444;
+  --blue:        #2563EB;
+
+  /* ── Single canonical text tokens ───────────────────────────────────────
+     --text-primary  → all headings and strong body copy
+     --text-secondary → supporting body text
+     --text-muted     → labels, captions, timestamps                        */
+  --text-primary:   #0A0025;  /* violet-tinted near-black — used everywhere */
+  --text-secondary: #6B7280;  /* gray-500                                   */
+  --text-muted:     #9CA3AF;  /* gray-400                                   */
+
+  /* ── Single canonical card border ──────────────────────────────────────
+     One value only. All cards use rgba(91,0,232,0.10).                    */
+  --card-border: rgba(91,0,232,0.10);
+  --card-border-hover: rgba(91,0,232,0.25);
   --card-shadow: 0 4px 24px rgba(91,0,232,0.07);
+
+  --dark:        #0A0025;   /* alias — same as --text-primary               */
   --grid-light:  rgba(91,0,232,0.06);
   --grid-dark:   rgba(255,255,255,0.04);
+}
+
+/* ── Global focus-visible ring ───────────────────────────────────────────────
+   Covers every interactive element: buttons, links, inputs, selects.
+   Ensures keyboard navigation is always visible (WCAG 2.4.7 / 2.4.11).    */
+:focus-visible {
+  outline: 2.5px solid #5B00E8;
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 /* ─── Base ──────────────────────────────────────────────────────────────────── */
@@ -216,9 +244,8 @@
     border-color: rgba(255,255,255,0.06);
   }
 
-  /* ─── Marquee ─── */
-  .marquee-container { display: flex; white-space: nowrap; overflow: hidden; width: 100%; }
-  .marquee-content   { display: flex; flex-shrink: 0; min-width: 100%; }
+  /* ─── Marquee (kept for potential future use — not currently used inline) ─── */
+  /* .marquee-container and .marquee-content removed — components use animate-marquee directly */
 
   /* ─── Sidebar active ─── */
   .nav-active {
@@ -263,6 +290,12 @@
 
 /* ─── Keyframes & Animations ─────────────────────────────────────────────────── */
 @layer utilities {
+  /* pulse — used by skeleton loaders via inline style animation: 'pulse ...' */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.45; }
+  }
+
   .animate-in { animation: animateIn 0.35s ease both; }
   @keyframes animateIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 

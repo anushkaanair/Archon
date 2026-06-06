@@ -1,20 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Play, ChevronRight, CheckCircle } from 'lucide-react';
+import { ArrowRight, ChevronRight, CheckCircle, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-
-/* ─── Logo ─────────────────────────────────────────────────────────────────── */
-const ArchonMark = ({ size = 24 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 28 28" fill="none">
-    <polygon points="14,2 24,10 14,18 4,10" fill="#5B00E8" />
-    <polygon points="14,2 4,10 14,10"  fill="#1A0050" />
-    <polygon points="14,2 24,10 14,10" fill="#8B3DFF" />
-    <polygon points="4,10 14,18 14,10" fill="#2D0070" />
-    <polygon points="24,10 14,18 14,10" fill="#C4A0FF" />
-    <circle cx="14" cy="10" r="2.5" fill="#EDE5FF" opacity="0.7" />
-  </svg>
-);
+import ArchonMark from '../components/ui/ArchonMark';
 
 /* ─── Typewriter terminal ───────────────────────────────────────────────────── */
 const PROMPTS = [
@@ -35,11 +24,12 @@ const PIPELINE_STAGES = [
   { id: 'ragas_evaluation',  label: 'ragas_evaluation',  ms: '408 ms' },
 ];
 
+// Source: artificialanalysis.ai quality index (June 2026)
 const MODEL_SCORES = [
-  { name: 'Claude Sonnet 4',  score: 96, bar: '96%' },
-  { name: 'GPT-4o',           score: 93, bar: '93%' },
-  { name: 'Gemini 2.0 Flash', score: 88, bar: '88%' },
-  { name: 'Mistral Large 2',  score: 81, bar: '81%' },
+  { name: 'Claude Opus 4.8',   score: 97, bar: '97%' },
+  { name: 'GPT-5.5',           score: 95, bar: '95%' },
+  { name: 'Gemini 3.1 Pro',    score: 91, bar: '91%' },
+  { name: 'DeepSeek R1',       score: 84, bar: '84%' },
 ];
 
 function Terminal() {
@@ -117,7 +107,7 @@ function Terminal() {
                 className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
                 style={{
                   background: stageIdx === i && !showScores ? 'rgba(217,119,6,0.15)' : 'rgba(0,168,84,0.12)',
-                  color: stageIdx === i && !showScores ? '#D97706' : '#00A854',
+                  color: stageIdx === i && !showScores ? '#D97706' : '#059669',
                 }}
               >
                 {stageIdx === i && !showScores ? 'RUN' : ' OK'}
@@ -153,10 +143,10 @@ function Terminal() {
         {showResult && (
           <div
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
-            style={{ background: 'rgba(0,168,84,0.08)', border: '1px solid rgba(0,168,84,0.2)' }}
+            style={{ background: 'rgba(5,150,105,0.08)', border: '1px solid rgba(5,150,105,0.2)' }}
           >
-            <span className="text-[#00A854] text-[11px] font-semibold">✓ blueprint complete</span>
-            <span className="text-white/30 text-[10px] ml-auto">est. $0.60/mo · p95 4.1 s · score 0.94</span>
+            <span className="text-[11px] font-semibold" style={{ color: 'var(--green)' }}>✓ blueprint complete</span>
+            <span className="text-white/30 text-[10px] ml-auto">architecture · cost · latency ready</span>
           </div>
         )}
       </div>
@@ -166,28 +156,29 @@ function Terminal() {
         className="flex items-center justify-between px-5 py-2.5 text-[10px] border-t border-white/[0.06]"
         style={{ background: 'rgba(255,255,255,0.015)' }}
       >
-        <span className="text-white/25">claude-sonnet-4  ·  200K ctx</span>
+        <span className="text-white/25">archon pipeline runner</span>
         <span style={{ color: '#5B00E8' }}>archon v0.1</span>
-        <span className="text-white/25">confidence: 0.94</span>
+        <span className="text-white/25">live · 6 stages</span>
       </div>
     </div>
   );
 }
 
 /* ─── Marquee chips ─────────────────────────────────────────────────────────── */
+// Source: artificialanalysis.ai leaderboard (June 2026) — no fake benchmark numbers
 const MARQUEE_ITEMS = [
-  { label: 'Claude Sonnet 4', value: '96% match', color: '#5B00E8' },
-  { label: 'P95 Latency',     value: '4.1 s',     color: '#D97706' },
-  { label: 'Monthly Cost',    value: '$0.60',      color: '#00A854' },
-  { label: 'RAGAs Score',     value: '0.94',       color: '#5B00E8' },
-  { label: 'GPT-4o',          value: '93% match',  color: '#5B00E8' },
-  { label: 'Context Window',  value: '200 K',      color: '#D97706' },
-  { label: 'DeepSeek R1',     value: '87% match',  color: '#5B00E8' },
-  { label: 'Blueprint',       value: '4.1 s',      color: '#D97706' },
-  { label: 'Gemini 2 Flash',  value: '88% match',  color: '#5B00E8' },
-  { label: 'Mistral Large',   value: '81% match',  color: '#5B00E8' },
-  { label: 'Models Scored',   value: '24+',        color: '#5B00E8' },
-  { label: 'Faithfulness',    value: '0.91',       color: '#00A854' },
+  { label: 'Claude Opus 4.8',  value: 'Quality #1',   color: '#5B00E8' },
+  { label: 'GPT-5.5',          value: 'Quality #2',   color: '#5B00E8' },
+  { label: 'Gemini 3.1 Pro',   value: '~60% cheaper', color: '#059669' },
+  { label: 'Mercury 2',        value: '996 t/s',      color: '#D97706' },
+  { label: 'Llama 4 Scout',    value: '10M ctx',      color: '#059669' },
+  { label: 'DeepSeek R1',      value: 'Open weights', color: '#5B00E8' },
+  { label: 'Qwen3.5 0.8B',     value: 'Ultra low $',  color: '#7C3AED' },
+  { label: 'Mistral Large 2',  value: 'EU residency', color: '#2563EB' },
+  { label: 'GPT-4o',           value: 'Vision + fn',  color: '#059669' },
+  { label: 'RAGAs Eval',       value: '6 metrics',    color: '#5B00E8' },
+  { label: 'Hybrid RAG',       value: 'BM25 + Dense', color: '#D97706' },
+  { label: 'Architecture',     value: 'Mermaid.js',   color: '#5B00E8' },
 ];
 
 /* ─── How It Works steps ────────────────────────────────────────────────────── */
@@ -248,11 +239,65 @@ function FadeIn({ children, className = '', delay = 0 }: { children: React.React
   );
 }
 
+/* ─── YouTube demo modal ────────────────────────────────────────────────────── */
+// Swap this URL for your real demo video when ready
+const DEMO_VIDEO_ID = 'dQw4w9WgXcQ'; // TODO: replace with real Archon demo video ID
+
+function DemoModal({ onClose }: { onClose: () => void }) {
+  // Close on Escape key
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <AnimatePresence>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+        {/* Backdrop */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+          onClick={onClose}
+        />
+        {/* Dialog */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.94, y: 16 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.94, y: 8 }}
+          transition={{ duration: 0.22 }}
+          className="relative z-10 w-full max-w-4xl"
+        >
+          <button
+            onClick={onClose}
+            className="absolute -top-10 right-0 flex items-center gap-1.5 text-white/60 hover:text-white text-[13px] font-medium transition-colors"
+            aria-label="Close demo video"
+          >
+            <X className="w-4 h-4" /> Close
+          </button>
+          <div className="rounded-2xl overflow-hidden" style={{ aspectRatio: '16/9', background: '#000' }}>
+            <iframe
+              src={`https://www.youtube.com/embed/${DEMO_VIDEO_ID}?autoplay=1&rel=0&modestbranding=1`}
+              title="Archon Demo"
+              allow="autoplay; fullscreen"
+              allowFullScreen
+              className="w-full h-full"
+            />
+          </div>
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
+}
+
 /* ─── Main ──────────────────────────────────────────────────────────────────── */
 export default function Home() {
   const { isAuthenticated, user } = useAuth();
   const [activeStep, setActiveStep] = useState(0);
   const [navScrolled, setNavScrolled] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setNavScrolled(window.scrollY > 20);
@@ -263,6 +308,8 @@ export default function Home() {
   const duplicated = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS];
 
   return (
+    <>
+    {showDemo && <DemoModal onClose={() => setShowDemo(false)} />}
     <div className="page-light min-h-screen overflow-x-hidden" style={{ fontFamily: 'Inter, sans-serif' }}>
 
       {/* ─── Nav ─────────────────────────────────────────────────────────────── */}
@@ -283,18 +330,20 @@ export default function Home() {
             </span>
           </div>
 
-          {/* Links */}
+          {/* Links — only anchor to real sections on this page */}
           <div className="hidden md:flex items-center gap-8">
-            {['Features', 'What you get', 'How it works', 'Docs'].map(l => (
+            {[
+              { label: 'Features',     href: '#features' },
+              { label: 'What you get', href: '#what-you-get' },
+              { label: 'How it works', href: '#how-it-works' },
+            ].map(({ label, href }) => (
               <a
-                key={l}
-                href={`#${l.toLowerCase().replace(/ /g, '-')}`}
-                className="text-[13px] font-medium transition-colors"
+                key={label}
+                href={href}
+                className="text-[13px] font-medium transition-colors hover:text-[#5B00E8] focus-visible:text-[#5B00E8]"
                 style={{ color: 'rgba(10,0,37,0.5)' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#5B00E8')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(10,0,37,0.5)')}
               >
-                {l}
+                {label}
               </a>
             ))}
           </div>
@@ -397,45 +446,30 @@ export default function Home() {
               <Link to="/login" className="btn-violet h-11 px-6 text-[14px] rounded-lg flex items-center gap-2">
                 Start building free <ArrowRight className="w-4 h-4" />
               </Link>
-              <a
-                href="#how-it-works"
+              <button
+                onClick={() => setShowDemo(true)}
                 className="btn-outline h-11 px-6 text-[14px] rounded-lg flex items-center gap-2"
               >
-                <Play className="w-3.5 h-3.5" style={{ fill: '#5B00E8' }} />
+                <span className="w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0" style={{ borderColor: '#5B00E8' }}>
+                  <span className="w-0 h-0 ml-0.5" style={{ borderTop: '4px solid transparent', borderBottom: '4px solid transparent', borderLeft: '6px solid #5B00E8' }} />
+                </span>
                 Watch demo
-              </a>
+              </button>
             </motion.div>
 
-            {/* Social proof */}
+            {/* Social proof — capability chips only, no fake counts */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.45 }}
-              className="mt-8 space-y-4"
+              className="mt-8"
             >
-              {/* Avatars + user count */}
-              <div className="flex items-center gap-3">
-                <div className="flex -space-x-2">
-                  {['#5B00E8','#2563EB','#059669','#D97706','#EF4444'].map((c, i) => (
-                    <div key={i}
-                      className="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold text-white"
-                      style={{ background: c, zIndex: 5 - i }}>
-                      {['A','K','M','J','R'][i]}
-                    </div>
-                  ))}
-                </div>
-                <p className="text-[12px]" style={{ color: 'rgba(10,0,37,0.5)' }}>
-                  <span style={{ fontWeight: 700, color: '#0A0025' }}>2,400+</span> engineers already building
-                </p>
-              </div>
-
-              {/* Stats pills */}
               <div className="flex flex-wrap gap-2">
                 {[
-                  { v: '18.5K', l: 'blueprints generated' },
-                  { v: '30+', l: 'models scored' },
-                  { v: '4.1s', l: 'avg generation' },
-                  { v: '$0.60', l: 'est/mo' },
+                  { v: '9+',        l: 'models ranked' },
+                  { v: '6-stage',   l: 'pipeline analysis' },
+                  { v: 'RAGAs',     l: 'quality evaluation' },
+                  { v: 'Mermaid',   l: 'architecture diagram' },
                 ].map(p => (
                   <div
                     key={p.l}
@@ -586,7 +620,7 @@ export default function Home() {
                   </div>
                   <div
                     className="mt-4 flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium"
-                    style={{ background: 'rgba(0,168,84,0.06)', border: '1px solid rgba(0,168,84,0.2)', color: '#00A854' }}
+                    style={{ background: 'rgba(0,168,84,0.06)', border: '1px solid rgba(0,168,84,0.2)', color: '#059669' }}
                   >
                     <CheckCircle className="w-4 h-4" />
                     Claude Sonnet 4 — highest score for your use case
@@ -669,7 +703,7 @@ export default function Home() {
                     <div key={s.label} className="flex items-center justify-between">
                       <div>
                         <p className="text-[11px] font-medium" style={{ color: 'rgba(10,0,37,0.4)' }}>{s.label}</p>
-                        <p style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 20, fontWeight: 600, color: s.amber ? '#D97706' : '#00A854' }}>{s.value}</p>
+                        <p style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 20, fontWeight: 600, color: s.amber ? '#D97706' : '#059669' }}>{s.value}</p>
                         <p className="text-[10px]" style={{ color: 'rgba(10,0,37,0.35)' }}>{s.sub}</p>
                       </div>
                     </div>
@@ -677,7 +711,7 @@ export default function Home() {
                 </div>
                 <div
                   className="mt-5 flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium"
-                  style={{ background: 'rgba(0,168,84,0.06)', border: '1px solid rgba(0,168,84,0.15)', color: '#00A854' }}
+                  style={{ background: 'rgba(0,168,84,0.06)', border: '1px solid rgba(0,168,84,0.15)', color: '#059669' }}
                 >
                   <CheckCircle className="w-3.5 h-3.5" />
                   Cheapest with highest score
@@ -689,8 +723,8 @@ export default function Home() {
       </section>
 
       {/* ─── How It Works ────────────────────────────────────────────────────── */}
-      <section id="how-it-works" className="py-28" style={{ background: 'var(--bg2)' }}>
-        <div className="absolute left-0 right-0 bg-grid-light opacity-40 pointer-events-none" style={{ height: '100%', position: 'absolute' }} />
+      <section id="how-it-works" className="py-28 relative" style={{ background: 'var(--bg2)' }}>
+        <div className="absolute inset-0 bg-grid-light opacity-40 pointer-events-none" />
         <div className="max-w-7xl mx-auto px-6 relative">
           <FadeIn className="text-center mb-16">
             <div
@@ -768,7 +802,7 @@ export default function Home() {
                           className="text-[10px] font-semibold px-1.5 py-0.5 rounded w-[38px] text-center"
                           style={{
                             background: status === 'done' ? 'rgba(0,168,84,0.12)' : status === 'active' ? 'rgba(217,119,6,0.15)' : 'rgba(255,255,255,0.04)',
-                            color: status === 'done' ? '#00A854' : status === 'active' ? '#D97706' : 'rgba(255,255,255,0.2)',
+                            color: status === 'done' ? '#059669' : status === 'active' ? '#D97706' : 'rgba(255,255,255,0.2)',
                           }}
                         >
                           {status === 'done' ? ' OK' : status === 'active' ? 'RUN' : ' --'}
@@ -797,7 +831,7 @@ export default function Home() {
       </section>
 
       {/* ─── Features strip ─────────────────────────────────────────────────── */}
-      <section className="py-20" style={{ background: '#fff' }}>
+      <section id="features" className="py-20" style={{ background: '#fff' }}>
         <div className="max-w-7xl mx-auto px-6">
           <FadeIn className="text-center mb-12">
             <p className="text-[11px] font-bold uppercase tracking-widest mb-4" style={{ color: '#5B00E8' }}>Everything in one tool</p>
@@ -885,17 +919,9 @@ export default function Home() {
           <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>
             © 2026 Archon Intelligence Platforms
           </p>
-          <div className="flex gap-5">
-            {['Privacy', 'Terms', 'API Docs'].map(l => (
-              <a key={l} href="#" className="text-[12px] transition-colors" style={{ color: 'rgba(255,255,255,0.3)' }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}>
-                {l}
-              </a>
-            ))}
-          </div>
         </div>
       </footer>
     </div>
+    </>
   );
 }
