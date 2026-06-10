@@ -18,10 +18,20 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 
+import os
+
+# Use the VECTOR column only when BOTH conditions hold:
+#   1. The pgvector Python package is importable (always true if installed).
+#   2. The deployment has explicitly opted in via PGVECTOR_ENABLED=true.
+# Render's free-tier Postgres does not grant CREATE EXTENSION privileges, so
+# even with the package present we must fall back to a TEXT column or
+# CREATE TABLE will fail with 'type "vector" does not exist'.
+_PGVECTOR_OPTED_IN = os.getenv("PGVECTOR_ENABLED", "").lower() in {"1", "true", "yes"}
+
 try:
     from pgvector.sqlalchemy import Vector as PGVector
 
-    _HAVE_PGVECTOR = True
+    _HAVE_PGVECTOR = _PGVECTOR_OPTED_IN
 except ImportError:  # pragma: no cover
     _HAVE_PGVECTOR = False
 
