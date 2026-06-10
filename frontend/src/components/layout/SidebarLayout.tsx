@@ -6,17 +6,7 @@ import {
   Hammer, ChevronLeft, ChevronRight, LogOut, Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-
-const ArchonMark = ({ size = 24 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 28 28" fill="none">
-    <polygon points="14,2 24,10 14,18 4,10" fill="#5B00E8" />
-    <polygon points="14,2 4,10 14,10" fill="#1A0050" />
-    <polygon points="14,2 24,10 14,10" fill="#8B3DFF" />
-    <polygon points="4,10 14,18 14,10" fill="#2D0070" />
-    <polygon points="24,10 14,18 14,10" fill="#C4A0FF" />
-    <circle cx="14" cy="10" r="2.5" fill="#EDE5FF" opacity="0.7" />
-  </svg>
-);
+import ArchonMark from '../ui/ArchonMark';
 
 const NAV = [
   { to: '/dashboard',  label: 'Dashboard', icon: LayoutDashboard, badge: null },
