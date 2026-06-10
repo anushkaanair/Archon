@@ -775,12 +775,35 @@ export default function Playground() {
 
   const fitView = () => { setZoom(1); setPan({ x: 0, y: 0 }); };
 
+  // Result of the most recent pipeline run — rendered as a floating panel
+  // so the user sees the final output prominently instead of having to
+  // hunt through each tiny node card for its inline text.
+  const [runResult, setRunResult] = useState<null | {
+    prompt: string;
+    finalOutput: string;
+    perNode: { id: string; type: NodeType; status: RunStatus; output: string; duration_ms?: number }[];
+    totalMs?: number;
+    modelUsed?: string | null;
+    offline: boolean;
+  }>(null);
+
   const runPipeline = async (prompt: string) => {
-    setShowRunModal(false); setIsRunning(true);
+    setShowRunModal(false); setIsRunning(true); setRunResult(null);
 
     // Mark every node as running up-front so the UI shows immediate activity
     // even while the backend is doing the real work.
     setNodes(prev => prev.map(n => ({ ...n, status: 'running' as RunStatus, output: undefined })));
+
+    const finishWith = (
+      perNode: { id: string; type: NodeType; status: RunStatus; output: string; duration_ms?: number }[],
+      meta: { totalMs?: number; modelUsed?: string | null; offline: boolean },
+    ) => {
+      // The "Output" node's text is what the user actually cares about.
+      // Fall back to the last node's output if no explicit output node exists.
+      const outputNode = perNode.find(r => r.type === 'output');
+      const finalOutput = (outputNode?.output) ?? perNode[perNode.length - 1]?.output ?? '(no output)';
+      setRunResult({ prompt, finalOutput, perNode, ...meta });
+    };
 
     try {
       const res = await fetch('/v1/playground/run', {
@@ -808,6 +831,17 @@ export default function Playground() {
           setNodes(prev => prev.map(n => n.id === r.id
             ? { ...n, status: r.status as RunStatus, output: r.output } : n));
         }
+        const nodeByType = new Map(nodes.map(n => [n.id, n.type] as const));
+        finishWith(
+          data.results.map((r: any) => ({
+            id: r.id,
+            type: (nodeByType.get(r.id) ?? 'output') as NodeType,
+            status: r.status as RunStatus,
+            output: r.output,
+            duration_ms: r.duration_ms,
+          })),
+          { totalMs: data.total_ms, modelUsed: data.model_used, offline: false },
+        );
       } else {
         throw new Error('Malformed response from /v1/playground/run');
       }
@@ -823,11 +857,14 @@ export default function Playground() {
         llm:       `[Offline stub] Real LLM call requires a configured API key. Prompt: "${prompt.slice(0, 60)}…"`,
         output:    `[Offline] Stub output rendered`,
       };
+      const perNode: { id: string; type: NodeType; status: RunStatus; output: string }[] = [];
       for (const node of sortedNodes) {
         await new Promise(r => setTimeout(r, 400));
         setNodes(prev => prev.map(n => n.id === node.id
           ? { ...n, status: 'done', output: FALLBACK[node.type] } : n));
+        perNode.push({ id: node.id, type: node.type, status: 'done', output: FALLBACK[node.type] });
       }
+      finishWith(perNode, { offline: true });
     } finally {
       setIsRunning(false);
     }
@@ -1110,6 +1147,127 @@ export default function Playground() {
       <AnimatePresence>
         {showHelp && <KeyboardHelpModal onClose={() => setShowHelp(false)} />}
       </AnimatePresence>
+
+      {/* ── Run result panel ── */}
+      <AnimatePresence>
+        {runResult && !isRunning && (
+          <RunResultPanel result={runResult} onClose={() => setRunResult(null)} />
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+/* ─── Run result floating panel ───────────────────────────────────────────── */
+function RunResultPanel({
+  result,
+  onClose,
+}: {
+  result: {
+    prompt: string;
+    finalOutput: string;
+    perNode: { id: string; type: NodeType; status: RunStatus; output: string; duration_ms?: number }[];
+    totalMs?: number;
+    modelUsed?: string | null;
+    offline: boolean;
+  };
+  onClose: () => void;
+}) {
+  const allDone = result.perNode.every(n => n.status === 'done');
+  const headerColor = result.offline ? '#D97706' : allDone ? '#059669' : '#EF4444';
+
+  return (
+    <motion.div
+      key="run-result"
+      initial={{ opacity: 0, y: 16, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 16, scale: 0.97 }}
+      transition={{ duration: 0.22, ease: 'easeOut' }}
+      className="fixed z-40 rounded-2xl overflow-hidden flex flex-col"
+      style={{
+        right: 24,
+        bottom: 24,
+        width: 420,
+        maxHeight: 'min(560px, calc(100vh - 110px))',
+        background: 'white',
+        border: '1.5px solid rgba(91,0,232,0.18)',
+        boxShadow: '0 24px 64px rgba(91,0,232,0.18), 0 4px 16px rgba(13,13,26,0.10)',
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-start gap-3 px-5 py-4 flex-shrink-0"
+        style={{ borderBottom: '1px solid rgba(91,0,232,0.08)', background: `linear-gradient(135deg, ${headerColor}10, transparent 70%)` }}>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+          style={{ background: `${headerColor}18`, border: `1px solid ${headerColor}30` }}>
+          {result.offline
+            ? <AlertTriangle className="w-4 h-4" style={{ color: headerColor }} />
+            : <CheckCircle2 className="w-4 h-4" style={{ color: headerColor }} />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="text-[14px] font-bold text-[#0D0D0D]">
+              {result.offline ? 'Pipeline ran (stubbed)' : 'Pipeline complete'}
+            </h3>
+            {result.totalMs != null && (
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded text-[#6B7280]"
+                style={{ background: 'rgba(91,0,232,0.06)' }}>
+                {result.totalMs} ms
+              </span>
+            )}
+          </div>
+          <p className="text-[11px] text-[#6B7280] mt-0.5 truncate">
+            {result.modelUsed ? <>via <span className="font-mono">{result.modelUsed}</span> · </> : null}
+            {result.perNode.length} node{result.perNode.length === 1 ? '' : 's'} executed
+          </p>
+        </div>
+        <button onClick={onClose}
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:bg-[#F4F2FF] hover:text-[#374151] transition-all flex-shrink-0">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Body — scrollable */}
+      <div className="overflow-y-auto px-5 py-4 space-y-4">
+        {/* Prompt echo */}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] mb-1.5">Prompt</p>
+          <p className="text-[12px] text-[#374151] leading-relaxed line-clamp-3"
+            style={{ background: '#F9FAFB', border: '1px solid rgba(91,0,232,0.06)', borderRadius: 10, padding: '8px 10px' }}>
+            {result.prompt}
+          </p>
+        </div>
+
+        {/* Final output — the headline */}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#5B00E8] mb-1.5">Final output</p>
+          <div className="rounded-xl p-4 whitespace-pre-wrap text-[12.5px] leading-relaxed text-[#0D0D0D]"
+            style={{ background: 'rgba(91,0,232,0.04)', border: '1.5px solid rgba(91,0,232,0.14)', fontFamily: 'inherit' }}>
+            {result.finalOutput || '(empty)'}
+          </div>
+        </div>
+
+        {/* Per-node breakdown */}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] mb-1.5">Per-node trace</p>
+          <div className="space-y-1.5">
+            {result.perNode.map(n => (
+              <details key={n.id} className="rounded-lg" style={{ background: '#F9FAFB', border: '1px solid rgba(91,0,232,0.08)' }}>
+                <summary className="px-3 py-2 cursor-pointer flex items-center gap-2 text-[11px] font-semibold select-none">
+                  <span className="w-1.5 h-1.5 rounded-full"
+                    style={{ background: n.status === 'done' ? '#10B981' : n.status === 'error' ? '#EF4444' : '#F59E0B' }} />
+                  <span className="font-mono text-[#374151] uppercase">{n.type}</span>
+                  {n.duration_ms != null && (
+                    <span className="ml-auto text-[10px] font-mono text-[#9CA3AF]">{n.duration_ms} ms</span>
+                  )}
+                </summary>
+                <div className="px-3 pb-3 pt-1 text-[11.5px] text-[#374151] whitespace-pre-wrap font-mono leading-relaxed">
+                  {n.output || '(no output)'}
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
