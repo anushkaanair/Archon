@@ -12,6 +12,7 @@ import CostTable from '../components/ui/CostTable';
 import LatencyTable from '../components/ui/LatencyTable';
 import ScoreGauge from '../components/ui/ScoreGauge';
 import DownloadButton from '../components/ui/DownloadButton';
+import ReportTemplate from '../components/ui/ReportTemplate';
 
 /* ─── Collapsible section ──────────────────────────────────────────────── */
 function Section({ title, icon: Icon, iconColor = '#5B00E8', children, defaultOpen = true, badge }: {
@@ -90,6 +91,7 @@ export default function BlueprintDetail() {
   const [bp, setBp]           = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -148,11 +150,11 @@ export default function BlueprintDetail() {
   const topModel  = recs[0];
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-6 lg:p-8 w-full">
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-6">
+      className="space-y-6 max-w-7xl mx-auto">
 
       {/* ── Back nav ── */}
       <Link to="/dashboard"
@@ -384,6 +386,91 @@ export default function BlueprintDetail() {
           </ul>
         </Section>
       )}
+
+      {/* ── TCO Callout ── */}
+      {totalCost > 0 && (
+        <div className="rounded-2xl px-6 py-4 flex items-start gap-4 flex-wrap bg-white"
+          style={{ border: '1.5px solid rgba(91,0,232,0.12)', boxShadow: '0 2px 12px rgba(91,0,232,0.05)' }}>
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(91,0,232,0.08)', border: '1.5px solid rgba(91,0,232,0.15)' }}>
+            <DollarSign className="w-4 h-4 text-[#5B00E8]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-bold text-[#0D0D0D] mb-1">True Total Cost of Ownership</p>
+            <p className="text-[12px] text-[#6B7280] mb-3">API cost is only part of the picture. Real monthly TCO includes infra, monitoring, and engineering time.</p>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { label: 'API Cost',             value: `$${totalCost.toFixed(2)}`,           color: '#5B00E8' },
+                { label: 'Infra (Redis+VDB)',     value: '$200.00',                             color: '#3B82F6' },
+                { label: 'Monitoring',            value: '$50.00',                              color: '#6B7280' },
+                { label: 'Engineering (0.1 FTE)', value: '$1,500.00',                           color: '#D97706' },
+                { label: 'True Monthly TCO',      value: `$${(totalCost + 1750).toFixed(2)}`,  color: '#0A0025' },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="rounded-xl px-3 py-2" style={{ background: `${color}09`, border: `1px solid ${color}20` }}>
+                  <p className="text-[9px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9CA3AF' }}>{label}</p>
+                  <p className="text-[13px] font-black" style={{ color, fontFamily: "'JetBrains Mono', monospace" }}>{value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Inline Report Preview ── */}
+      <div className="rounded-2xl overflow-hidden bg-white"
+        style={{ border: '1.5px solid rgba(91,0,232,0.1)', boxShadow: '0 2px 16px rgba(91,0,232,0.06)' }}>
+        <button
+          onClick={() => setPreviewOpen(v => !v)}
+          className="w-full flex items-center justify-between px-6 py-4 transition-colors"
+          style={{ borderBottom: previewOpen ? '1px solid rgba(91,0,232,0.06)' : 'none' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(91,0,232,0.02)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+          <h2 className="text-[13px] font-bold text-[#0D0D0D] flex items-center gap-3">
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center"
+              style={{ background: 'rgba(91,0,232,0.08)', border: '1px solid rgba(91,0,232,0.15)' }}>
+              <Network className="w-3.5 h-3.5 text-[#5B00E8]" />
+            </span>
+            Preview Report
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full"
+              style={{ background: 'rgba(91,0,232,0.08)', color: '#5B00E8', border: '1px solid rgba(91,0,232,0.15)' }}>
+              3 pages · A4
+            </span>
+          </h2>
+          <span className="text-[#9CA3AF]">
+            {previewOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </span>
+        </button>
+
+        <AnimatePresence initial={false}>
+          {previewOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25 }}>
+              <div className="px-6 py-5">
+                <p className="text-[11px] text-[#9CA3AF] mb-3">Scroll to preview all 3 pages. Use "Download Report" to save as PDF.</p>
+                <div style={{
+                  overflow: 'auto',
+                  maxHeight: 580,
+                  background: '#E5E7EB',
+                  borderRadius: 10,
+                  padding: 16,
+                }}>
+                  <div style={{
+                    width: 794,
+                    transform: 'scale(0.6)',
+                    transformOrigin: 'top left',
+                    marginBottom: `calc(${3369 * 0.6}px - 3369px)`,
+                  }}>
+                    <ReportTemplate blueprint={bp} />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* ── DIY CTA ── */}
       <div className="rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap bg-white"
