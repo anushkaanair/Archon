@@ -1,12 +1,27 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
       "source": "/v1/:path*",
-      "destination": "https://REPLACE_WITH_RAILWAY_URL/v1/:path*"
+      "destination": "https://archon-backend-8bhe.onrender.com/v1/:path*"
     },
     {
       "source": "/auth/:path*",
-      "destination": "https://REPLACE_WITH_RAILWAY_URL/auth/:path*"
+      "destination": "https://archon-backend-8bhe.onrender.com/auth/:path*"
+    },
+    {
+      "source": "/health",
+      "destination": "https://archon-backend-8bhe.onrender.com/health"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "X-Frame-Options", "value": "DENY" }
+      ]
     }
   ]
 }
