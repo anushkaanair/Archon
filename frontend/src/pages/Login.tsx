@@ -110,13 +110,15 @@ export default function Login() {
 
               <button
                 onClick={() => handleOAuth('github')}
-                className="w-full h-11 rounded-xl font-semibold text-[14px] flex items-center justify-center gap-3 transition-all hover:bg-[#1a1a1a]"
+                className="w-full h-11 rounded-xl font-semibold text-[14px] flex items-center justify-center gap-3 transition-all"
                 style={{
-                  background: 'var(--text-primary)',
-                  border: '1.5px solid var(--text-primary)',
-                  color: '#fff',
-                  boxShadow: '0 2px 8px rgba(13,13,13,0.2)',
+                  background: '#0D0D0D',
+                  border: '1.5px solid #0D0D0D',
+                  color: '#FFFFFF',
+                  boxShadow: '0 2px 8px rgba(13,13,13,0.25)',
                 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#1f1f1f'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#0D0D0D'; }}
               >
                 <GitHubIcon />
                 Continue with GitHub
