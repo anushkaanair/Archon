@@ -6,15 +6,15 @@
   "rewrites": [
     {
       "source": "/v1/:path*",
-      "destination": "https://archon-backend.onrender.com/v1/:path*"
+      "destination": "https://archon-backend-8bhe.onrender.com/v1/:path*"
     },
     {
       "source": "/auth/:path*",
-      "destination": "https://archon-backend.onrender.com/auth/:path*"
+      "destination": "https://archon-backend-8bhe.onrender.com/auth/:path*"
     },
     {
       "source": "/health",
-      "destination": "https://archon-backend.onrender.com/health"
+      "destination": "https://archon-backend-8bhe.onrender.com/health"
     },
     {
       "source": "/(.*)",
