@@ -1,218 +1,178 @@
 # Archon — AI Systems Design Engine
 
 <div align="center">
-  <img src="https://img.shields.io/badge/Status-Beta-7F77DD?style=flat-square&labelColor=0d0b18" />
-  <img src="https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square&labelColor=0d0b18" />
-  <img src="https://img.shields.io/badge/Frontend-React%20%2B%20TypeScript-61DAFB?style=flat-square&labelColor=0d0b18" />
-  <img src="https://img.shields.io/badge/Database-SQLite%20%2F%20PostgreSQL-003B57?style=flat-square&labelColor=0d0b18" />
-  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square&labelColor=0d0b18" />
+
+### [Open the live app →](https://archon-one-kappa.vercel.app)
+
+<br/>
+
+<img src="https://img.shields.io/badge/Try%20it%20live-archon--one--kappa.vercel.app-5B00E8?style=for-the-badge&labelColor=0d0b18" alt="Live demo" />
+
+<br/>
+
+<img src="https://img.shields.io/badge/Status-Live%20Beta-059669?style=flat-square&labelColor=0d0b18" />
+<img src="https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square&labelColor=0d0b18" />
+<img src="https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB?style=flat-square&labelColor=0d0b18" />
+<img src="https://img.shields.io/badge/Database-PostgreSQL-003B57?style=flat-square&labelColor=0d0b18" />
+<img src="https://img.shields.io/badge/LLM-Gemini%202.5%20Flash-4285F4?style=flat-square&labelColor=0d0b18" />
+<img src="https://img.shields.io/badge/License-MIT-green?style=flat-square&labelColor=0d0b18" />
+
 </div>
 
 ---
 
-**Archon** is a production-ready AI infrastructure design engine. Describe your product in plain English and receive a fully scored architecture blueprint — complete with model recommendations, cost estimates, P95 latency projections, a Mermaid.js architecture diagram, and RAGAs quality evaluation.
+## Try it now
 
-Built for engineering teams that need to move fast without making expensive infrastructure decisions based on guesswork.
+Open **[archon-one-kappa.vercel.app](https://archon-one-kappa.vercel.app)**, sign in with Google or GitHub, and:
+
+1. Describe an AI product in plain English in the **Builder**
+2. Get back a complete architecture blueprint with model ranking, monthly cost, p95 latency, and a quality evaluation
+3. Open the **Playground** to drag and drop pipeline nodes, configure each with real models, and run them against live Gemini for real output
+4. Watch the **Dashboard** auto-pull live RSS news from OpenAI, Anthropic, DeepMind, HuggingFace and MIT every 30 minutes
+
+No setup, no API keys to bring — the demo runs on the maintainer's Gemini quota.
 
 ---
 
-## Features
+## What it does
 
-| Capability | Description |
-|---|---|
-| **Semantic Task Analysis** | Auto-detects RAG, code generation, classification, and translation tasks from natural language descriptions |
-| **Model Strategy Engine** | Scores and ranks LLMs (GPT-4o, Claude, Gemini, Llama, Mistral, etc.) on cost, latency, quality, and task fit |
-| **Architecture Diagrams** | Generates Mermaid.js graphs with modular nodes for ingestion, retrieval, generation, and evaluation flows |
-| **Cost & Latency Projections** | Extrapolated monthly run rates and P95 latency benchmarks against real request volumes |
-| **Hybrid RAG Vectorization** | Dense embeddings + BM25 sparse indexing unified under CrossEncoder reranking |
-| **RAGAs Evaluation** | Faithfulness, answer relevancy, context precision, and recall — with confidence flags below threshold |
-| **Blueprint History** | Full persistence, pagination, and JSON export of all generated blueprints |
-| **Real-time Analytics** | Dashboard with live stats from the database — no hardcoded data |
+**Archon turns a plain-English product description into a production-ready AI architecture.** Instead of spending 2–4 weeks researching models, comparing pricing pages, prototyping pipelines, and debating tradeoffs with your team, you describe what you want and get back:
+
+- **Detected AI tasks** (RAG, vision, code generation, conversational AI, agents…) inferred via embeddings
+- **Ranked model recommendations** — 47 real models scored on cost, latency, quality, task fit
+- **Monthly cost projection** at your traffic volume, with per-model breakdowns and pricing-source citations
+- **End-to-end p95 latency** estimate broken down by pipeline stage
+- **Architecture diagram** as an interactive node graph you can click into
+- **RAGAs quality evaluation** (faithfulness, answer relevancy, context precision, context recall)
+- **Plain-English explanation** of why this stack and what tradeoffs were made
+- **Live constraint controls** — drag a slider for requests/month or max latency, the page recomputes the entire blueprint
+
+---
+
+## Who it's for
+
+| User | Use case |
+|------|----------|
+| **Solo founders / PMs** | Scoping a new AI feature without weeks of model research |
+| **Engineering leads** | Cost-planning before adding LLM to an existing product |
+| **AI architects** | Comparing tradeoffs across models in one place |
+| **Compliance teams** | Checking which models meet GDPR / HIPAA / SOC2 |
+| **Educators / students** | Learning how production AI systems are designed |
+
+---
+
+## Tech stack
+
+**Frontend** — React 19 · TypeScript · Vite · Tailwind CSS · framer-motion · react-router · lucide-react · Mermaid.js · html2canvas + jsPDF for report export
+
+**Backend** — Python 3.11 · FastAPI · async SQLAlchemy 2 · asyncpg · Alembic · Redis (optional) · Celery (optional) · structlog · python-jose
+
+**AI / ML** — Google Gemini 2.5 Flash (text generation) · text-embedding-004 (semantic task detection) · pgvector for hybrid retrieval · BM25 fallback · RAGAs for quality evaluation · Anthropic + OpenAI SDKs ready as alternative providers
+
+**Auth** — Google + GitHub OAuth 2.0 · HS256 JWT in httpOnly cookies · 30-day session with 7-day grace refresh
+
+**Hosting** — Vercel (frontend) · Render (backend + PostgreSQL) · GitHub (source)
 
 ---
 
 ## Architecture
 
 ```
-archon/
-├── app/
-│   ├── api/v1/          # FastAPI routers (architect, blueprints, dashboard, models)
-│   ├── db/              # SQLAlchemy async sessions + models
-│   ├── schemas/         # Pydantic request/response schemas
-│   ├── services/        # Pipeline stages (reasoning, model strategy, cost/latency sim, eval)
-│   └── main.py          # App factory, CORS, lifespan
-├── frontend/
-│   ├── src/
-│   │   ├── components/  # Reusable UI components (MermaidDiagram, ScoreGauge, etc.)
-│   │   ├── context/     # Auth context (API-key based)
-│   │   ├── pages/       # Route pages (Home, Login, Dashboard, Builder, Analytics, Settings)
-│   │   └── App.tsx      # Router configuration
-│   └── vite.config.ts   # Dev proxy → backend port 8000
-├── alembic/             # DB migration scripts
-└── pyproject.toml       # Python dependencies
+USER PROMPT  →  POST /v1/architect
+              ↓
+   STAGE 1   Semantic task detection
+              cosine similarity vs 13 task anchors
+              keyword fallback when embedder unavailable
+              ↓
+   STAGE 2   Persist query (audit trail)
+              ↓
+   STAGE 3   Model scoring
+              47 models from registry
+              multi-criteria weighted score (cost · latency · quality · fit)
+              ↓
+   STAGE 4   Architecture generation
+              build typed DAG (input → retriever → llm → output)
+              emit Mermaid + JSON
+              ↓
+   STAGE 5   Cost + latency estimation
+              tokens × calls × $/M token with pricing citations
+              ↓
+   STAGE 6   RAGAs quality evaluation (4s timeout)
+              ↓
+   STAGE 7   LLM explanation generation (5s timeout)
+              ↓
+   STAGE 8   Persist blueprint  →  return JSON
 ```
 
-### 8-Stage Pipeline (`POST /v1/architect`)
-
-```
-Input Text
-  ↓ [1] Semantic Analysis  — detect tasks + confidence
-  ↓ [2] RAG Context Query  — retrieve relevant model benchmarks
-  ↓ [3] Model Scoring      — rank models on 4 dimensions
-  ↓ [4] Architecture Gen   — produce Mermaid diagram
-  ↓ [5] Cost Estimation    — monthly USD per request volume
-  ↓ [6] Latency Estimation — P50/P95 per model tier
-  ↓ [7] RAGAs Evaluation   — faithfulness, relevancy, precision, recall
-  ↓ [8] Explanation Gen    — plain-English rationale + citations
-  ↓ Persist to DB → Return blueprint JSON
-```
+Every stage is independently fault-tolerant — a failure in one stage degrades gracefully rather than failing the whole pipeline.
 
 ---
 
-## Tech Stack
+## API surface
 
-| Layer | Technology |
-|---|---|
-| Backend | Python 3.11 · FastAPI · SQLAlchemy (async) · Alembic |
-| Frontend | React 18 · TypeScript · Vite · Tailwind CSS · Framer Motion |
-| Database | SQLite (dev) · PostgreSQL (prod) |
-| AI/ML | Anthropic Claude · OpenAI GPT-4o · sentence-transformers |
-| Evaluation | RAGAs framework |
-| Diagrams | Mermaid.js |
-| Auth | API-key based (Bearer token) |
+`GET /health` — liveness probe
+
+`POST /v1/architect` — full blueprint generation pipeline
+`GET /v1/blueprints` · `GET /v1/blueprints/:id` — list and read previous blueprints
+`POST /v1/playground/run` — execute a visual pipeline graph with real Gemini calls
+`GET /v1/news` · `POST /v1/news/refresh` — live AI industry news from 5 RSS feeds
+`GET /v1/dashboard/stats` — aggregate metrics for the signed-in user
+`GET /v1/models` — full model registry (47 models with pricing, latency, ELO)
+`GET /v1/user/me` · `PATCH /v1/user/me` — profile read and update
+
+`GET /auth/google` · `GET /auth/github` · `GET /auth/me` · `POST /auth/refresh` · `POST /auth/logout` — OAuth + session
+
+Full spec at `https://archon-backend-8bhe.onrender.com/docs` (interactive OpenAPI UI).
 
 ---
 
-## Getting Started
-
-Deployed on Railway + Vercel.
-
-### Prerequisites
-- Python 3.11+
-- Node.js 18+
-- An Anthropic or OpenAI API key (optional — fallback mode works without one)
-
-### 1. Backend
+## Run it locally
 
 ```bash
-# Clone
-git clone https://github.com/your-username/archon.git
-cd archon
+git clone https://github.com/anushkaanair/Archon.git
+cd Archon
 
-# Create virtualenv
+# Backend
 python -m venv .venv
-.venv\Scripts\activate          # Windows
-# source .venv/bin/activate     # macOS/Linux
+.venv/Scripts/activate            # or source .venv/bin/activate on macOS/Linux
+pip install -r requirements.txt
 
-# Install
-pip install -e .
-
-# Configure
+# Environment
 cp .env.example .env
-# Edit .env — add OPENAI_API_KEY or ANTHROPIC_API_KEY
+# Edit .env — set at least one of GOOGLE_API_KEY / ANTHROPIC_API_KEY / OPENAI_API_KEY
+# (see docs/OAUTH_SETUP.md for adding Google/GitHub sign-in)
 
-# Initialise DB
-python init_db.py
+# Start backend
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
-# Run
-uvicorn app.main:app --reload --port 8000
-```
-
-### 2. Frontend
-
-```bash
+# Frontend (new terminal)
 cd frontend
 npm install
-npm run dev
-# → http://localhost:5173
+npm run dev                       # opens http://localhost:5174
 ```
 
-API docs available at **http://localhost:8000/docs**
+Backend serves at `http://localhost:8000`, OpenAPI docs at `/docs`, and the frontend auto-proxies API calls.
 
 ---
 
-## Environment Variables
+## Deploy your own
 
-| Variable | Required | Description |
-|---|---|---|
-| `OPENAI_API_KEY` | Optional | Enables GPT-4o for explanation + RAGAs eval |
-| `ANTHROPIC_API_KEY` | Optional | Alternative to OpenAI for explanations |
-| `DATABASE_URL` | No | Postgres URL for production (default: SQLite) |
-| `API_KEY_HASH_SECRET` | No | Secret for API key hashing |
-| `CORS_ORIGINS` | No | Comma-separated list of allowed origins |
+The repo includes a `render.yaml` blueprint that spins up the backend service plus a PostgreSQL database on **[Render](https://render.com)** with one click. The frontend is a Vite SPA — deploy to **[Vercel](https://vercel.com)** by importing the repo with `frontend` as the Root Directory.
 
----
-
-## Deployment
-
-### Render (Backend)
-
-1. Create a new **Web Service** on [render.com](https://render.com)
-2. Connect your GitHub repository
-3. Set:
-   - **Root Directory**: `/` (repo root)
-   - **Build Command**: `pip install -e .`
-   - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-4. Add environment variables in the Render dashboard
-5. Optionally add a **PostgreSQL** database from Render's add-ons
-
-### Vercel (Frontend)
-
-1. Push the repo to GitHub
-2. Import the project at [vercel.com](https://vercel.com)
-3. Set:
-   - **Root Directory**: `frontend`
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
-4. Add environment variable:
-   - `VITE_API_URL` = `https://your-archon-backend.onrender.com`
-
-### Railway (Full Stack, Easiest)
-
-Deploy both services from one dashboard at [railway.app](https://railway.app) — Railway auto-detects Python and Node.js from the repo root.
-
----
-
-## API Reference
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/v1/architect` | POST | Full 8-stage pipeline — returns complete blueprint |
-| `/v1/blueprints` | GET | Paginated blueprint history |
-| `/v1/blueprints/{id}` | GET | Full blueprint detail |
-| `/v1/dashboard/stats` | GET | Aggregate metrics (counts, costs, avg scores) |
-| `/v1/models` | GET | List all models in registry |
-| `/v1/analyze` | POST | Standalone semantic task detection |
-| `/v1/recommend` | POST | Standalone model scoring |
-| `/v1/estimate` | POST | Cost + latency estimation only |
-| `/v1/explain` | POST | LLM explanation generation |
-
-All endpoints require `Authorization: Bearer <api-key>` header.
-
----
-
-## Cost Estimate
-
-Archon uses external LLM APIs **only for Stage 7 (explanation generation)**. All other stages run locally with no API cost.
-
-| Usage | Blueprints/month | Approximate LLM Cost |
-|---|---|---|
-| Dev / Demo | 50 | ~$0.60 |
-| Small Team | 500 | ~$6 |
-| Production | 5,000 | ~$60 |
-
-Using Claude Sonnet (~$0.012/blueprint) or GPT-4o (~$0.017/blueprint).
+Full setup walkthrough: `docs/OAUTH_SETUP.md`
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE)
+MIT — see [`LICENSE`](LICENSE)
 
 ---
 
 <div align="center">
-  <sub>Built with precision by the Archon team · Not affiliated with any LLM provider</sub>
-</div>
 
-Helloo
+Made by [@anushkaanair](https://github.com/anushkaanair) · Powered by Gemini, FastAPI, and a lot of late-night refactoring
+
+**[Try the live demo →](https://archon-one-kappa.vercel.app)**
+
+</div>
