@@ -36,9 +36,11 @@ def _make_engine():
     return create_async_engine(
         url,
         echo=_settings.debug,
-        pool_size=10,
-        max_overflow=20,
+        pool_size=5,
+        max_overflow=5,
         pool_pre_ping=True,
+        # Fail fast instead of hanging startup forever if Postgres is unreachable.
+        connect_args={"timeout": 10, "command_timeout": 30},
     )
 
 engine = _make_engine()

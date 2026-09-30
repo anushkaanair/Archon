@@ -7,7 +7,13 @@ services:
     plan: free
     rootDir: .
     buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    # --workers 1: Render free tier has 512 MB RAM; a second worker would OOM.
+    # --limit-max-requests 500: recycle the worker every 500 requests so slow
+    # memory growth from LLM SDK clients doesn't accumulate until an OOM kill
+    # (surfaces on Render as `Exited with status 3`).
+    # --timeout-keep-alive 15: don't hold idle connections past the free-tier
+    # cutoff and rack up socket handles.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --limit-max-requests 500 --timeout-keep-alive 15
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -27,6 +33,10 @@ services:
         value: "https://archon-frontend.vercel.app,https://archon.vercel.app"
       - key: PYTHON_VERSION
         value: "3.11"
+      # Stream stdout/stderr so tracebacks show up in Render logs in real time
+      # instead of buffering and getting lost when the worker exits.
+      - key: PYTHONUNBUFFERED
+        value: "1"
       # Disable HuggingFace Hub network checks (models cached from build)
       - key: HF_HUB_OFFLINE
         value: "1"
