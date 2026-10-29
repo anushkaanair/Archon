@@ -124,6 +124,15 @@ export default function Login() {
                 Continue with GitHub
               </button>
             </div>
+
+            {/* Temporary: Google/GitHub sign-in redirect is misconfigured. Remove once fixed. */}
+            <button
+              onClick={() => { window.location.href = '/auth/guest'; }}
+              className="w-full mt-4 text-[13px] font-medium transition-colors hover:text-[#5B00E8]"
+              style={{ color: 'rgba(13,13,13,0.45)' }}
+            >
+              Skip for now &rarr;
+            </button>
           </div>
         </div>
 
