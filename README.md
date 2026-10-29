@@ -39,11 +39,11 @@ No setup, no API keys to bring — the demo runs on the maintainer's Gemini quot
 **Archon turns a plain-English product description into a production-ready AI architecture.** Instead of spending 2–4 weeks researching models, comparing pricing pages, prototyping pipelines, and debating tradeoffs with your team, you describe what you want and get back:
 
 - **Detected AI tasks** (RAG, vision, code generation, conversational AI, agents…) inferred via embeddings
-- **Ranked model recommendations** — 47 real models scored on cost, latency, quality, task fit
-- **Monthly cost projection** at your traffic volume, with per-model breakdowns and pricing-source citations
+- **Ranked model recommendations** — 31 models from a bundled registry scored on cost, latency, quality, task fit
+- **Monthly cost projection** at your traffic volume, with per-model breakdowns (pricing comes from the bundled registry, not a live pricing feed)
 - **End-to-end p95 latency** estimate broken down by pipeline stage
 - **Architecture diagram** as an interactive node graph you can click into
-- **RAGAs quality evaluation** (faithfulness, answer relevancy, context precision, context recall)
+- **RAGAs quality evaluation** (faithfulness, answer relevancy, context precision, context recall) — *experimental: no retrieval context is passed yet, so scores are best-effort and often flagged low-confidence*
 - **Plain-English explanation** of why this stack and what tradeoffs were made
 - **Live constraint controls** — drag a slider for requests/month or max latency, the page recomputes the entire blueprint
 
@@ -67,11 +67,15 @@ No setup, no API keys to bring — the demo runs on the maintainer's Gemini quot
 
 **Backend** — Python 3.11 · FastAPI · async SQLAlchemy 2 · asyncpg · Alembic · Redis (optional) · Celery (optional) · structlog · python-jose
 
-**AI / ML** — Google Gemini 2.5 Flash (text generation) · text-embedding-004 (semantic task detection) · pgvector for hybrid retrieval · BM25 fallback · RAGAs for quality evaluation · Anthropic + OpenAI SDKs ready as alternative providers
+**AI / ML** — Google Gemini Flash (explanations use `gemini-2.0-flash`; the Playground uses `gemini-2.5-flash`) · text-embedding-004 (semantic task detection) · RAGAs for quality evaluation · Anthropic + OpenAI SDKs supported as alternative providers · Langfuse tracing (optional)
 
-**Auth** — Google + GitHub OAuth 2.0 · HS256 JWT in httpOnly cookies · 30-day session with 7-day grace refresh
+**Retrieval (not yet wired in)** — a pgvector + BM25 hybrid knowledge base lives in `app/rag/`, but the `/v1/architect` pipeline does not call it yet and no source documents are ingested.
 
-**Hosting** — Vercel (frontend) · Render (backend + PostgreSQL) · GitHub (source)
+**Auth** — Google + GitHub OAuth 2.0 · HS256 JWT in an httpOnly cookie · fixed 30-day session (no refresh endpoint yet)
+
+**Hosting** — Vercel (frontend) · Render (backend + PostgreSQL, see `render.yaml`) · GitHub (source). `Procfile` and `railway.json` are also included for Railway deploys.
+
+**SDKs** — Python (`sdk/python`) and TypeScript (`sdk/typescript`) client libraries.
 
 ---
 
@@ -87,7 +91,7 @@ USER PROMPT  →  POST /v1/architect
    STAGE 2   Persist query (audit trail)
               ↓
    STAGE 3   Model scoring
-              47 models from registry
+              31 models from registry
               multi-criteria weighted score (cost · latency · quality · fit)
               ↓
    STAGE 4   Architecture generation
@@ -95,16 +99,16 @@ USER PROMPT  →  POST /v1/architect
               emit Mermaid + JSON
               ↓
    STAGE 5   Cost + latency estimation
-              tokens × calls × $/M token with pricing citations
+              tokens × calls × $/M token from registry pricing
               ↓
-   STAGE 6   RAGAs quality evaluation (4s timeout)
+   STAGE 6   RAGAs quality evaluation (4s timeout, experimental — no retrieved context yet)
               ↓
    STAGE 7   LLM explanation generation (5s timeout)
               ↓
    STAGE 8   Persist blueprint  →  return JSON
 ```
 
-Every stage is independently fault-tolerant — a failure in one stage degrades gracefully rather than failing the whole pipeline.
+The evaluation and explanation stages (6–7) are time-boxed and degrade gracefully on failure. If the whole `/v1/architect` request fails, the Builder UI falls back to a locally generated **sample blueprint** (`frontend/src/data/mockBlueprint.ts`), so treat results as illustrative when the backend is unreachable. Likewise the Dashboard shows a bundled news snapshot if `/v1/news` fails.
 
 ---
 
@@ -117,10 +121,12 @@ Every stage is independently fault-tolerant — a failure in one stage degrades 
 `POST /v1/playground/run` — execute a visual pipeline graph with real Gemini calls
 `GET /v1/news` · `POST /v1/news/refresh` — live AI industry news from 5 RSS feeds
 `GET /v1/dashboard/stats` — aggregate metrics for the signed-in user
-`GET /v1/models` — full model registry (47 models with pricing, latency, ELO)
+`GET /v1/models` — full model registry (31 models with pricing, latency, ELO)
 `GET /v1/user/me` · `PATCH /v1/user/me` — profile read and update
+`POST /v1/analyze` · `POST /v1/recommend` · `POST /v1/estimate` · `POST /v1/explain` — the individual pipeline stages, callable on their own
 
-`GET /auth/google` · `GET /auth/github` · `GET /auth/me` · `POST /auth/refresh` · `POST /auth/logout` — OAuth + session
+`GET /auth/google` · `GET /auth/github` · `GET /auth/me` · `POST /auth/logout` — OAuth + session
+`POST /auth/dev` — local-development login (returns 404 unless `DEBUG` is on)
 
 Full spec at `https://archon-backend-8bhe.onrender.com/docs` (interactive OpenAPI UI).
 
