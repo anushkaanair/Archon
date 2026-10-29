@@ -212,6 +212,35 @@ async def github_callback(code: str, db: AsyncSession = Depends(get_db)):
     return response
 
 
+# ── Guest access ──────────────────────────────────────────────────────────────
+# Temporary stand-in for real OAuth while Google/GitHub sign-in is misconfigured
+# (TODO: remove once redirect URIs are fixed). Unlike /auth/dev, this is allowed
+# in production: it's a clearly-labelled shared demo account, not a backdoor to
+# a privileged dev user, and every guest lands on the same account/data.
+
+GUEST_EMAIL = "guest@archon.demo"
+GUEST_NAME = "Guest"
+GUEST_PROVIDER = "guest"
+GUEST_PROVIDER_ID = "guest-shared-001"
+
+
+@router.get("/guest")
+async def guest_login(db: AsyncSession = Depends(get_db)):
+    cfg = _cfg()
+    user = await upsert_user(
+        db,
+        email=GUEST_EMAIL,
+        name=GUEST_NAME,
+        avatar_url=None,
+        provider=GUEST_PROVIDER,
+        provider_id=GUEST_PROVIDER_ID,
+    )
+    jwt_token = create_jwt(user)
+    response = RedirectResponse(f"{cfg.frontend_url}/dashboard")
+    set_auth_cookie(response, jwt_token)
+    return response
+
+
 # ── Session endpoints ─────────────────────────────────────────────────────────
 
 @router.get("/me")
